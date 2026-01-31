@@ -2,7 +2,7 @@ import mongoose,{Schema} from "mongoose";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 dotenv.config({
-    path:"/.env"
+    path:"./.env"
 });
 import jwt from "jsonwebtoken";
 
@@ -22,7 +22,8 @@ const userSchema=new Schema({
         unique:true,
         minlength:3,
         lowercase:true,
-        trim:true
+        trim:true,
+        match: [/^\S+@\S+\.\S+$/, "Invalid email"]
     },
     password:{
         type: String,
@@ -36,30 +37,20 @@ const userSchema=new Schema({
         index:true,
         trim:true
     },
-    phone:{
-        type:Number,
-        required:true,
-        minlength:10,
-        maxlength:10
-    },
     address:{
         type:String,
         required:true,
         minlength:3
     },
-    cart: [{ type: Schema.Types.ObjectId, ref: "Product" }],
-    orders:[{ type: Schema.Types.ObjectId, ref: "Product" }],
     refreshToken:{
         type:String
     }
 },{timestamps:true});
 
 userSchema.pre("save",async function(next){
-    if(this.isModified("password")){
-        this.password= await bcrypt.hashSync(this.password,10);
-        return next();
-    }
-    else return next();
+    if(!this.isModified("password")) return ;
+    this.password= await bcrypt.hash(this.password,10);
+    
 })
 
 userSchema.methods.isPasswordCorrect=async function(password){
