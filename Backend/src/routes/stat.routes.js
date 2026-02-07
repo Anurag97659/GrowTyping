@@ -7,7 +7,8 @@ import {
     getDailyProgress,
     getTopWeakKeys,
     getTypingStreak,
-    getTypingHistory
+    getTypingHistory,
+    getAverageAccuracyByType
 } from "../controller/stats.controller.js";
 
 const router = Router();
@@ -20,5 +21,6 @@ router.route("/daily-progress").get(verifyJWT, getDailyProgress);
 router.route("/weak-keys").get(verifyJWT, getTopWeakKeys);
 router.route("/streak").get(verifyJWT, getTypingStreak);
 router.route("/history").get(verifyJWT, getTypingHistory);
+router.route("/average-accuracy").get(verifyJWT, getAverageAccuracyByType);
 
 export default router;

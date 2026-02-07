@@ -63,7 +63,7 @@ const getDateMatch =(range) =>{
 
 const saveTypingStat = asyncHandler(async(req, res) =>{
     const userId = req.user?._id;
-
+    console.log("REQ.USER =", req.user);
     const{
         wpm,
         accuracy,
@@ -96,7 +96,7 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
         incorrectChars,
         weakKeys
     });
-
+    console.log("Saved stat:", stat);
     return res.status(201).json(
         new ApiResponse(201, stat, "Typing stat saved successfully")
     );
@@ -249,6 +249,26 @@ const getTypingHistory = asyncHandler(async(req, res) =>{
         .json(new ApiResponse(200, stats, "Typing history fetched"));
 });
 
+const getAverageAccuracyByType = asyncHandler(async (req, res) => {
+    const userId = new mongoose.Types.ObjectId(req.user?._id);
+    const dateMatch = getDateMatch(req.query.range);
+
+    const stats = await TypingStat.aggregate([
+        { $match: { user: userId, ...dateMatch } },
+        {
+            $group: {
+                _id: "$testType",
+                averageAccuracy: { $avg: "$accuracy" }
+            }
+        }
+    ]);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, stats, "Average accuracy by test type fetched"));
+});
+
+     
 export{
     saveTypingStat,
     getDashboardStats,
@@ -256,5 +276,6 @@ export{
     getDailyProgress,
     getTopWeakKeys,
     getTypingStreak,
-    getTypingHistory
+    getTypingHistory,
+    getAverageAccuracyByType
 };
