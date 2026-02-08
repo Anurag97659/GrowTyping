@@ -215,137 +215,278 @@ const finishTest = async () => {
 
 
 
-  return (
-    <div
+  const [theme, setTheme] = useState("default");
+
+  const themes = {
+    default: {
+      bg: "from-slate-950 via-slate-900 to-slate-950",
+      text: "text-slate-200",
+      primary: "blue",
+      card: "bg-slate-800/80 border-blue-500/60",
+      button: "bg-slate-700 text-slate-100 border-blue-500",
+    },
+
+    graphite: {
+      bg: "from-zinc-950 via-zinc-900 to-zinc-950",
+      text: "text-zinc-200",
+      primary: "zinc",
+      card: "bg-zinc-800/80 border-zinc-500/60",
+      button: "bg-zinc-700 text-zinc-100 border-zinc-500",
+    },
+
+    midnight: {
+      bg: "from-gray-950 via-gray-900 to-gray-950",
+      text: "text-gray-200",
+      primary: "gray",
+      card: "bg-gray-800/80 border-gray-500/60",
+      button: "bg-gray-700 text-gray-100 border-gray-500",
+    },
+
+    ocean: {
+      bg: "from-sky-950 via-sky-900 to-sky-950",
+      text: "text-sky-200",
+      primary: "sky",
+      card: "bg-sky-800/80 border-sky-500/60",
+      button: "bg-sky-700 text-sky-100 border-sky-500",
+    },
+
+    emerald: {
+      bg: "from-emerald-950 via-emerald-900 to-emerald-950",
+      text: "text-emerald-200",
+      primary: "emerald",
+      card: "bg-emerald-800/80 border-emerald-500/60",
+      button: "bg-emerald-700 text-emerald-100 border-emerald-500",
+    },
+
+    violet: {
+      bg: "from-violet-950 via-violet-900 to-violet-950",
+      text: "text-violet-200",
+      primary: "violet",
+      card: "bg-violet-800/80 border-violet-500/60",
+      button: "bg-violet-700 text-violet-100 border-violet-500",
+    },
+
+    crimson: {
+      bg: "from-red-950 via-red-900 to-red-950",
+      text: "text-red-200",
+      primary: "red",
+      card: "bg-red-800/80 border-red-500/60",
+      button: "bg-red-700 text-red-100 border-red-500",
+    },
+
+    amber: {
+      bg: "from-amber-950 via-amber-900 to-amber-950",
+      text: "text-amber-200",
+      primary: "amber",
+      card: "bg-amber-800/80 border-amber-500/60",
+      button: "bg-amber-700 text-amber-100 border-amber-500",
+    },
+
+    teal: {
+      bg: "from-teal-950 via-teal-900 to-teal-950",
+      text: "text-teal-200",
+      primary: "teal",
+      card: "bg-teal-800/80 border-teal-500/60",
+      button: "bg-teal-700 text-teal-100 border-teal-500",
+    },
+
+    rose: {
+      bg: "from-rose-950 via-rose-900 to-rose-950",
+      text: "text-rose-200",
+      primary: "rose",
+      card: "bg-rose-800/80 border-rose-500/60",
+      button: "bg-rose-700 text-rose-100 border-rose-500",
+    },
+  };
+
+  const currentTheme = themes[theme];
+
+    return (
+      <div
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-green-400 font-mono flex flex-col items-center pt-8 outline-none"
+      className={`min-h-screen bg-gradient-to-br ${currentTheme.bg} ${currentTheme.text} font-mono flex flex-col items-center pt-8 outline-none`}
     >
 
-      <div className="w-full flex flex-col items-center gap-6 mb-12">
-        <h1 className="text-5xl font-bold bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
-          GrowTyping
-        </h1>
-        <div className="bg-gray-800/70 border border-green-500/70 rounded-lg p-6 w-full max-w-2xl">
-          <div className="flex items-center justify-between gap-8">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-green-400 font-semibold hover:text-green-300 transition-all duration-200 px-4 py-2 rounded hover:bg-green-900/40 border border-green-500/70"
-            >
-              {username}
-            </button>
-            <div className="flex gap-3 flex-1 justify-center">
-              {["15s", "30s", "60s", "custom"].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setTestType(m)}
-                  className={`px-5 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex-1 ${
-                    testType === m
-                      ? "bg-green-400 text-gray-950 shadow-lg shadow-green-400/60"
-                      : "bg-gray-700 text-green-400 hover:bg-gray-600 border border-green-600"
-                  }`}
+        <div className="w-full flex flex-col items-center gap-6 mb-12">
+          <div className={`${currentTheme.card} rounded-lg p-6 w-full max-w-2xl`}>
+            <div className="flex items-center justify-between gap-8">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className={`font-semibold hover:${currentTheme.primary}-300 transition-all duration-200 px-4 py-2 rounded hover:bg-${currentTheme.primary}-900/40 ${currentTheme.card}`}
+              >
+                {username}
+              </button>
+              <div className="flex gap-3 flex-1 justify-center">
+                {["15s", "30s", "60s", "custom"].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setTestType(m)}
+                    className={`px-5 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex-1 ${
+                      testType === m
+                        ? `bg-${currentTheme.primary}-400 text-slate-950 shadow-lg shadow-${currentTheme.primary}-400/60`
+                        : `${currentTheme.button}`
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative">
+                <select
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value)}
+                  className={`px-3 py-2 rounded-lg font-semibold ${currentTheme.button} cursor-pointer hover:bg-opacity-80 transition-all`}
                 >
-                  {m}
+                  {Object.keys(themes).map((t) => (
+                    <option key={t} value={t} className="bg-slate-900">
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {testType !== "custom" && (
+          <div className="flex flex-col items-center mb-6 gap-3">
+            <div className={`text-3xl font-bold ${currentTheme.text} animate-pulse drop-shadow-lg`}>
+              ⏱ {timeLeft}s
+            </div>
+            <button
+              onClick={resetTest}
+              className={`px-6 py-2 ${currentTheme.button} rounded-lg hover:bg-opacity-80 transition-all duration-200`}
+            >
+              Reset
+            </button>
+          </div>
+        )}
+
+        <div className={`bg-gradient-to-b from-slate-800 to-slate-900 p-8 rounded-2xl max-w-7xl text-2xl leading-relaxed cursor-text tracking-wide shadow-2xl border border-${currentTheme.primary}-500/70 hover:border-${currentTheme.primary}-400 transition-colors duration-300 h-48 overflow-hidden`}>
+          {(() => {
+            const charsPerLine = 80;
+            const totalLines = Math.ceil(text.length / charsPerLine);
+            const currentLineIndex = Math.floor(typedChars.length / charsPerLine);
+            const startLine = Math.max(0, currentLineIndex);
+            const endLine = Math.min(totalLines, startLine + 3);
+            const lines = [];
+            for (let lineIdx = startLine; lineIdx < endLine; lineIdx++) {
+              const lineStart = lineIdx * charsPerLine;
+              const lineEnd = Math.min(text.length, lineStart + charsPerLine);
+              const lineText = text.slice(lineStart, lineEnd);
+              lines.push(
+                <div key={lineIdx} className="whitespace-pre-wrap">
+                  {lineText.split("").map((char, i) => {
+                    const charIdx = lineStart + i;
+                    if (charIdx < typedChars.length) {
+                      return (
+                        <span
+                          key={i}
+                          className={
+                            typedChars[charIdx].correct
+                              ? `text-${currentTheme.primary}-400 font-semibold`
+                              : "text-red-400 underline font-semibold"
+                          }
+                        >
+                          {char === " " ? "·" : char}
+                        </span>
+                      );
+                    }
+                    if (charIdx === typedChars.length) {
+                      return (
+                        <span
+                          key={i}
+                          className={`relative bg-white/20 text-slate-200 border-l-2 border-white animate-pulse font-bold`}
+                        >
+                          {char === " " ? "·" : char}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span key={i} className={`text-${currentTheme.primary}-600`}>
+                        {char === " " ? "·" : char}
+                      </span>
+                    );
+                  })}
+                </div>,
+              );
+            }
+            return lines;
+          })()}
+        </div>
+
+        <div className="mt-10 text-center font-mono">
+          <div className={`${currentTheme.card} rounded-lg px-12 py-6 hover:border-${currentTheme.primary}-400 transition-colors inline-block`}>
+            <div className="flex gap-12">
+              <div>
+                <p className={`text-4xl font-bold ${currentTheme.text} drop-shadow-lg`}>
+                  {liveWpm}
+                </p>
+                <p className={`text-${currentTheme.primary}-300 text-sm mt-2 uppercase tracking-wider`}>
+                  WPM
+                </p>
+              </div>
+              <div>
+                <p className={`text-4xl font-bold ${currentTheme.text} drop-shadow-lg`}>
+                  {liveAccuracy}%
+                </p>
+                <p className={`text-${currentTheme.primary}-300 text-sm mt-2 uppercase tracking-wider`}>
+                  Accuracy
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className={`text-${currentTheme.primary}-500 mt-8 text-sm tracking-wide`}>
+          Click the box and start typing
+        </p>
+
+        {finishedRef.current && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className={`bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-${currentTheme.primary}-500/50 rounded-2xl p-10 max-w-md w-full mx-4 shadow-2xl`}>
+              <h2 className={`text-3xl font-bold ${currentTheme.text} mb-8 text-center`}>
+                Test Complete!
+              </h2>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={`bg-slate-700/50 rounded-lg p-4 border border-${currentTheme.primary}-500/30`}>
+                    <p className={`text-${currentTheme.primary}-300 text-xs uppercase tracking-wider mb-2`}>WPM</p>
+                    <p className={`text-3xl font-bold ${currentTheme.text}`}>{Math.round(correctRef.current / 5 / (durationMap[testType] / 60))}</p>
+                  </div>
+                  <div className={`bg-slate-700/50 rounded-lg p-4 border border-${currentTheme.primary}-500/30`}>
+                    <p className={`text-${currentTheme.primary}-300 text-xs uppercase tracking-wider mb-2`}>Accuracy</p>
+                    <p className={`text-3xl font-bold ${currentTheme.text}`}>{((correctRef.current / totalRef.current) * 100).toFixed(1)}%</p>
+                  </div>
+                  <div className={`bg-slate-700/50 rounded-lg p-4 border border-${currentTheme.primary}-500/30`}>
+                    <p className={`text-${currentTheme.primary}-300 text-xs uppercase tracking-wider mb-2`}>Correct</p>
+                    <p className={`text-2xl font-bold ${currentTheme.text}`}>{correctRef.current}</p>
+                  </div>
+                  <div className={`bg-slate-700/50 rounded-lg p-4 border border-${currentTheme.primary}-500/30`}>
+                    <p className={`text-${currentTheme.primary}-300 text-xs uppercase tracking-wider mb-2`}>Mistakes</p>
+                    <p className="text-2xl font-bold text-red-400">{incorrectRef.current}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={resetTest}
+                  className={`w-full bg-gradient-to-r from-${currentTheme.primary}-500 to-${currentTheme.primary}-400 text-slate-950 font-bold py-3 rounded-lg hover:from-${currentTheme.primary}-400 hover:to-${currentTheme.primary}-300 transition-all duration-200 transform hover:scale-105 shadow-lg`}
+                >
+                  Try Again
                 </button>
-              ))}
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className={`w-full ${currentTheme.button} font-bold py-3 rounded-lg transition-all duration-200`}
+                >
+                  Dashboard
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
+    );
+  }
 
-      {testType !== "custom" && (
-        <div className="flex flex-col items-center mb-6 gap-3">
-          <div className="text-3xl font-bold text-green-400 animate-pulse drop-shadow-lg">
-            ⏱ {timeLeft}s
-          </div>
-          <button
-            onClick={resetTest}
-            className="px-6 py-2 bg-gray-700 text-green-400 border border-green-500 rounded-lg hover:bg-gray-600 hover:text-green-300 transition-all duration-200"
-          >
-            Reset
-          </button>
-        </div>
-      )}
 
-      <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-8 rounded-2xl max-w-7xl text-2xl leading-relaxed cursor-text tracking-wide shadow-2xl border border-green-500/70 hover:border-green-400 transition-colors duration-300 h-48 overflow-hidden">
-        {(() => {
-          const charsPerLine = 80;
-          const totalLines = Math.ceil(text.length / charsPerLine);
-          const currentLineIndex = Math.floor(typedChars.length / charsPerLine);
-          const startLine = Math.max(0, currentLineIndex);
-          const endLine = Math.min(totalLines, startLine + 3);
-          const lines = [];
-          for (let lineIdx = startLine; lineIdx < endLine; lineIdx++) {
-            const lineStart = lineIdx * charsPerLine;
-            const lineEnd = Math.min(text.length, lineStart + charsPerLine);
-            const lineText = text.slice(lineStart, lineEnd);
-            lines.push(
-              <div key={lineIdx} className="whitespace-pre-wrap">
-                {lineText.split("").map((char, i) => {
-                  const charIdx = lineStart + i;
-                  if (charIdx < typedChars.length) {
-                    return (
-                      <span
-                        key={i}
-                        className={
-                          typedChars[charIdx].correct
-                            ? "text-green-400 font-semibold"
-                            : "text-red-400 underline font-semibold"
-                        }
-                      >
-                        {char === " " ? "·" : char}
-                      </span>
-                    );
-                  }
-                  if (charIdx === typedChars.length) {
-                    return (
-                      <span
-                        key={i}
-                        className="bg-green-400 text-gray-950 animate-pulse font-bold rounded-[1px] px-[1px]"
-                      >
-                        {char === " " ? "·" : char}
-                      </span>
-                    );
-                  }
-                  return (
-                    <span key={i} className="text-green-600">
-                      {char === " " ? "·" : char}
-                    </span>
-                  );
-                })}
-              </div>,
-            );
-          }
-          return lines;
-        })()}
-      </div>
-
-      <div className="mt-10 text-center text-green-400 font-mono">
-        <div className="bg-gray-800/70 border border-green-500/70 rounded-lg px-12 py-6 hover:border-green-400 transition-colors inline-block">
-          <div className="flex gap-12">
-            <div>
-              <p className="text-4xl font-bold text-green-400 drop-shadow-lg">
-                {liveWpm}
-              </p>
-              <p className="text-green-300 text-sm mt-2 uppercase tracking-wider">
-                WPM
-              </p>
-            </div>
-            <div>
-              <p className="text-4xl font-bold text-green-400 drop-shadow-lg">
-                {liveAccuracy}%
-              </p>
-              <p className="text-green-300 text-sm mt-2 uppercase tracking-wider">
-                Accuracy
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p className="text-green-500 mt-8 text-sm tracking-wide">
-        Click the box and start typing{" "}
-      </p>
-    </div>
-  );
-}
