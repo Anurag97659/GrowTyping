@@ -9,50 +9,55 @@ const getDateMatch =(range) =>{
     const now = new Date();
     let start, end;
 
-    switch(range){
-        case "today":
-            start = new Date(now.setHours(0, 0, 0, 0));
-            end = new Date();
-            break;
+    switch (range) {
+      case "today": {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
 
-        case "lastDay":
-            start = new Date();
-            start.setDate(start.getDate() - 1);
-            start.setHours(0, 0, 0, 0);
-            end = new Date(start);
-            end.setHours(23, 59, 59, 999);
-            break;
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
 
-        case "lastWeek":
-            start = new Date();
-            start.setDate(start.getDate() - 7);
-            end = new Date();
-            break;
+        return { testDate: { $gte: start, $lte: end } };
+      }
 
-        case "lastMonth":
-            start = new Date();
-            start.setDate(start.getDate() - 30);
-            end = new Date();
-            break;
+      case "lastDay":
+        start = new Date();
+        start.setDate(start.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        break;
 
-        case "last6Months":
-            start = new Date();
-            start.setMonth(start.getMonth() - 6);
-            end = new Date();
-            break;
+      case "lastWeek":
+        start = new Date();
+        start.setDate(start.getDate() - 7);
+        end = new Date();
+        break;
 
-        case "thisYear":
-            start = new Date(new Date().getFullYear(), 0, 1);
-            end = new Date();
-            break;
+      case "lastMonth":
+        start = new Date();
+        start.setDate(start.getDate() - 30);
+        end = new Date();
+        break;
 
-        case "previousYears":
-            start = null;
-            end = new Date(new Date().getFullYear(), 0, 1);
-            break;
+      case "last6Months":
+        start = new Date();
+        start.setMonth(start.getMonth() - 6);
+        end = new Date();
+        break;
 
-        default:
-            return{};
+      case "thisYear":
+        start = new Date(new Date().getFullYear(), 0, 1);
+        end = new Date();
+        break;
+
+      case "previousYears":
+        start = null;
+        end = new Date(new Date().getFullYear(), 0, 1);
+        break;
+
+      default:
+        return {};
     }
 
     if(start && end) return{ testDate:{ $gte: start, $lte: end } };
@@ -84,6 +89,10 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
     ){
         throw new ApiError(400, "All required fields must be provided");
     }
+    const normalizedWeakKeys = (weakKeys || []).map(k => ({
+        key: k.key,
+        mistakeCount: k.mistakeCount ?? 1
+    }));
 
     const stat = await TypingStat.create({
         user: userId,
@@ -94,7 +103,7 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
         testType,
         correctChars,
         incorrectChars,
-        weakKeys
+        weakKeys: normalizedWeakKeys
     });
     console.log("Saved stat:", stat);
     return res.status(201).json(

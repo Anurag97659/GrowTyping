@@ -578,6 +578,8 @@ const Dashboard = () => {
                   "Accuracy (%)",
                   "Duration (s)",
                   "Characters Typed",
+                  "Correct Chars",
+                  "Wrong Chars",
                 ].map((th) => (
                   <th
                     key={th}
@@ -591,7 +593,7 @@ const Dashboard = () => {
             <tbody>
               {history.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-6 text-gray-400">
+                  <td colSpan="8" className="text-center py-6 text-gray-400">
                     No typing history available
                   </td>
                 </tr>
@@ -613,6 +615,8 @@ const Dashboard = () => {
                     <td className="px-6 py-4 text-yellow-400 font-medium">{item.accuracy}</td>
                     <td className="px-6 py-4 text-purple-400 font-medium">{item.duration}</td>
                     <td className="px-6 py-4 text-gray-300">{item.charactersTyped}</td>
+                    <td className="px-6 py-4 text-green-400 font-medium">{item.correctChars}</td>
+                    <td className="px-6 py-4 text-red-400 font-medium">{item.incorrectChars}</td>
                   </tr>
                 ))
               )}
