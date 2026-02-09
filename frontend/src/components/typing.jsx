@@ -55,7 +55,7 @@ const generateText = (count = 200) =>
 
 const api = axios.create({
   baseURL:
-    import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/GrowTyping/v1",
+    import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
   withCredentials: true,
 });
 
@@ -66,7 +66,7 @@ export default function TypingPage() {
   const [username, setUsername] = useState("User");
   useEffect(() => {
     api
-      .get("/users/getUsername")
+      .get("GrowTyping/v1/users/getUsername")
       .then((res) => setUsername(String(res.data.data.username).toUpperCase()))
       .catch((error) => {
         if (error.response?.status === 401) {

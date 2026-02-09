@@ -13,7 +13,7 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
 
     const api = axios.create({
-        baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/GrowTyping/v1",
+        baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
         withCredentials: true,
     });
 
@@ -21,7 +21,7 @@ const Profile = () => {
         const fetchProfile = async () => {
             try {
                 setLoading(true);
-                const res = await api.get("/users/getuserprofile"); 
+                const res = await api.get("GrowTyping/v1/users/getuserprofile"); 
                 const data = res.data.data;
                 setProfile({
                     username: data.username || "",
@@ -47,7 +47,7 @@ const Profile = () => {
         if (!confirmed) return;
 
         try {
-            await api.post("/users/deleteuser"); 
+            await api.post("GrowTyping/v1/users/deleteuser"); 
             alert("Your account has been deleted.");
             window.location.href = "/"; 
         } catch (err) {
@@ -58,7 +58,7 @@ const Profile = () => {
 
     const handleLogout = async () => {
         try {
-            await api.post("/users/logout"); 
+            await api.post("GrowTyping/v1/users/logout"); 
             alert("Logged out successfully.");
             window.location.href = "/login"; 
         } catch (err) {

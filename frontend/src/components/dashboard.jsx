@@ -26,17 +26,17 @@ const Dashboard = () => {
       setLoading(true);
 
       const statsData = await api.get(
-        `/stats/dashboard?range=${selectedRange}`,
+        `GrowTyping/v1/stats/dashboard?range=${selectedRange}`,
       );
       setStats(statsData.data.data);
 
       const wpmData = await api.get(
-        `/stats/average-wpm?range=${selectedRange}`,
+        `GrowTyping/v1/stats/average-wpm?range=${selectedRange}`,
       );
       setWpmByType(wpmData.data.data);
 
       const accuracyData = await api.get(
-        `/stats/average-accuracy?range=${selectedRange}`,
+        `GrowTyping/v1/stats/average-accuracy?range=${selectedRange}`,
       );
       setAccuracyByType(
         accuracyData.data.data.map((item) => ({
@@ -46,15 +46,15 @@ const Dashboard = () => {
       );
 
       const weakKeysData = await api.get(
-        `/stats/weak-keys?range=${selectedRange}`,
+        `GrowTyping/v1/stats/weak-keys?range=${selectedRange}`,
       );
       setWeakKeys(weakKeysData.data.data);
 
-      const streakData = await api.get(`/stats/streak`);
+      const streakData = await api.get(`GrowTyping/v1/stats/streak`);
       setStreak(streakData.data.data.streak || 0);
 
       const historyData = await api.get(
-        `/stats/history?range=${selectedRange}`,
+        `GrowTyping/v1/stats/history?range=${selectedRange}`,
       );
       const hist = historyData.data.data;
       setHistory(hist);
@@ -93,7 +93,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchAllTimeBest = async () => {
       try {
-        const allTimeData = await api.get(`/stats/history`);
+        const allTimeData = await api.get(`GrowTyping/v1/stats/history`);
         const hist = allTimeData.data.data;
 
         const recordByType = {};
@@ -132,7 +132,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const userData = await api.get("/users/getusername");
+        const userData = await api.get("GrowTyping/v1/users/getusername");
         setUsername(userData.data.data.username || "User");
       } catch (err) {
         console.error("Error fetching user info:", err);

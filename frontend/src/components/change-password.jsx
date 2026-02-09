@@ -7,7 +7,7 @@ function ChangePassword(){
   const[confirmPassword,setconfirmpassword] = useState('');
   
   const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/GrowTyping/v1",
+    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
     withCredentials: true,
   });
 
@@ -18,7 +18,7 @@ function ChangePassword(){
       return;
     }
     try {
-      const res = await api.post("/users/changePassword", {
+      const res = await api.post("GrowTyping/v1/users/changePassword", {
         oldPassword,
         newPassword,
         confirmPassword

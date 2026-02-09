@@ -7,7 +7,7 @@ function Login() {
   const [password, setpassword] = useState("");
 
   const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/GrowTyping/v1",
+    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
     withCredentials: true,
   });
 
@@ -15,7 +15,7 @@ function Login() {
     e.preventDefault();
 
     try {
-      const res = await api.post("/users/login", {
+      const res = await api.post("GrowTyping/v1/users/login", {
         username,
         password,
       });
