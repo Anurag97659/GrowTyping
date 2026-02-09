@@ -8,6 +8,13 @@ dotenv.config({
     path: "/.env"
 });
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,       
+  sameSite: "none",    
+};
+
+
 const registeruser = asyncHandler(async (req, res) => {
     const { username, email, password, fullname, address } = req.body;
 
@@ -80,8 +87,8 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
         const {accessToken, newRefreshToken}=await generateAccessTokenAndRefreshToken(user._id);
         return res
             .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", newRefreshToken, cookieOptions)
             .json(
                 new ApiResponse(200,{
                     accessToken,
@@ -122,8 +129,8 @@ const loginuser=asyncHandler(async(req,res)=>{
    };
     return res
         .status(200)
-        .cookie("accessToken",accessToken,options)
-        .cookie("refreshToken",refreshToken,options)
+        .cookie("accessToken",accessToken,cookieOptions)
+        .cookie("refreshToken",refreshToken,cookieOptions)
         .json(
             new ApiResponse(200,{
                 user:loggedUser,
@@ -152,8 +159,8 @@ const logoutuser=asyncHandler(async(req,res)=>{
  };
   return res
     .status(200)
-    .clearCookie("accessToken",options)
-    .clearCookie("refreshToken",options)
+    .clearCookie("accessToken",cookieOptions)
+    .clearCookie("refreshToken",cookieOptions)
     .json(new ApiResponse(200,{},"User logged out successfully"));
 });
 
