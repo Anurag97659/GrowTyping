@@ -320,7 +320,11 @@ const finishTest = async () => {
       onKeyDown={handleKeyDown}
       className={`min-h-screen bg-gradient-to-br ${currentTheme.bg} ${currentTheme.text} font-mono flex flex-col items-center pt-8 outline-none`}
     >
-
+        <div className="w-full flex justify-center mb-10">
+          <h1 className={`text-4xl md:text-5xl font-light tracking-wider leading-[1.1] pb-1 bg-gradient-to-r from-white via-${currentTheme.primary}-200 to-${currentTheme.primary}-400 bg-clip-text text-transparent drop-shadow-[0_8px_25px_rgba(0,0,0,0.45)]`}>
+            GrowTyping
+          </h1>
+        </div>
         <div className="w-full flex flex-col items-center gap-6 mb-12">
           <div className={`${currentTheme.card} rounded-lg p-6 w-full max-w-2xl`}>
             <div className="flex items-center justify-between gap-8">
