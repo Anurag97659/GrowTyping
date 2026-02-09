@@ -215,89 +215,102 @@ const finishTest = async () => {
 
 
 
-  const [theme, setTheme] = useState("default");
+  const [theme, setTheme] = useState("cyberpunk");
 
-  const themes = {
-    default: {
-      bg: "from-slate-950 via-slate-900 to-slate-950",
-      text: "text-slate-200",
-      primary: "blue",
-      card: "bg-slate-800/80 border-blue-500/60",
-      button: "bg-slate-700 text-slate-100 border-blue-500",
-    },
+ const themes = {
+  // High-end industry themes - Updated for high card contrast and readable dropdown text
 
-    graphite: {
-      bg: "from-zinc-950 via-zinc-900 to-zinc-950",
-      text: "text-zinc-200",
-      primary: "zinc",
-      card: "bg-zinc-800/80 border-zinc-500/60",
-      button: "bg-zinc-700 text-zinc-100 border-zinc-500",
-    },
+  // Luxury Gold & Navy - Sophisticated enterprise feel
+  "luxury-gold": {
+    bg: "from-slate-950 via-indigo-950 to-amber-950",
+    text: "text-amber-100",
+    primary: "amber",
+    card: "bg-slate-800/95 border-amber-400/60 backdrop-blur-md shadow-xl",
+    button: "bg-gradient-to-r from-amber-500/90 to-amber-400/90 text-slate-900 border-amber-400 shadow-lg hover:shadow-amber-400/50"
+  },
 
-    midnight: {
-      bg: "from-gray-950 via-gray-900 to-gray-950",
-      text: "text-gray-200",
-      primary: "gray",
-      card: "bg-gray-800/80 border-gray-500/60",
-      button: "bg-gray-700 text-gray-100 border-gray-500",
-    },
+  // Cyberpunk Neon - Tech/futuristic with vibrant accents
+  "cyberpunk": {
+    bg: "from-slate-950 via-purple-950 to-pink-950",
+    text: "text-slate-100",
+    primary: "pink",
+    card: "bg-slate-800/95 border-purple-400/50 backdrop-blur-lg shadow-2xl ring-1 ring-purple-500/30",
+    button: "bg-gradient-to-r from-purple-500/90 via-pink-500/90 to-fuchsia-500/90 text-slate-50 border-purple-400/50 shadow-lg hover:shadow-purple-400/40 glow"
+  },
 
-    ocean: {
-      bg: "from-sky-950 via-sky-900 to-sky-950",
-      text: "text-sky-200",
-      primary: "sky",
-      card: "bg-sky-800/80 border-sky-500/60",
-      button: "bg-sky-700 text-sky-100 border-sky-500",
-    },
+  // Monaco GP - Racing luxury with metallic silver
+  "monaco": {
+    bg: "from-zinc-950 via-blue-950 to-zinc-900",
+    text: "text-zinc-50",
+    primary: "blue",
+    card: "bg-zinc-700/95 border-blue-400/70 backdrop-blur-md shadow-2xl ring-1 ring-blue-400/30",
+    button: "bg-gradient-to-r from-blue-500/90 to-emerald-500/90 text-slate-900 border-blue-400 shadow-xl hover:shadow-emerald-400/40"
+  },
 
-    emerald: {
-      bg: "from-emerald-950 via-emerald-900 to-emerald-950",
-      text: "text-emerald-200",
-      primary: "emerald",
-      card: "bg-emerald-800/80 border-emerald-500/60",
-      button: "bg-emerald-700 text-emerald-100 border-emerald-500",
-    },
+  // Dubai Skyline - Warm desert luxury with sapphire accents
+  "dubai": {
+    bg: "from-orange-950 via-amber-950 to-sky-950",
+    text: "text-slate-50",
+    primary: "sky",
+    card: "bg-slate-800/95 border-sky-400/60 backdrop-blur-lg shadow-xl ring-1 ring-sky-400/30",
+    button: "bg-gradient-to-r from-sky-400/90 to-orange-400/90 text-slate-900 border-sky-400 shadow-xl hover:shadow-orange-400/50"
+  },
 
-    violet: {
-      bg: "from-violet-950 via-violet-900 to-violet-950",
-      text: "text-violet-200",
-      primary: "violet",
-      card: "bg-violet-800/80 border-violet-500/60",
-      button: "bg-violet-700 text-violet-100 border-violet-500",
-    },
+  // Tokyo Night - Japanese minimalism with indigo gradients
+  "tokyo-night": {
+    bg: "from-indigo-950 via-slate-950 to-violet-950",
+    text: "text-slate-100",
+    primary: "indigo",
+    card: "bg-slate-800/95 border-indigo-400/50 backdrop-blur-md shadow-xl ring-1 ring-indigo-500/30",
+    button: "bg-gradient-to-r from-indigo-500/90 to-violet-500/90 text-slate-50 border-indigo-400 shadow-lg hover:shadow-indigo-400/40"
+  },
 
-    crimson: {
-      bg: "from-red-950 via-red-900 to-red-950",
-      text: "text-red-200",
-      primary: "red",
-      card: "bg-red-800/80 border-red-500/60",
-      button: "bg-red-700 text-red-100 border-red-500",
-    },
+  // Silicon Valley - Professional tech with green innovation accents
+  "silicon": {
+    bg: "from-stone-950 via-emerald-950 to-stone-950",
+    text: "text-emerald-100",
+    primary: "emerald",
+    card: "bg-stone-800/95 border-emerald-400/60 backdrop-blur-md shadow-xl ring-1 ring-emerald-400/30",
+    button: "bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-slate-900 border-emerald-400 shadow-lg hover:shadow-emerald-400/50"
+  },
 
-    amber: {
-      bg: "from-amber-950 via-amber-900 to-amber-950",
-      text: "text-amber-200",
-      primary: "amber",
-      card: "bg-amber-800/80 border-amber-500/60",
-      button: "bg-amber-700 text-amber-100 border-amber-500",
-    },
+  // Beverly Hills - Sunset gradient luxury
+  "beverly": {
+    bg: "from-rose-950 via-orange-950 to-amber-950",
+    text: "text-slate-50",
+    primary: "amber",
+    card: "bg-slate-800/95 border-orange-400/60 backdrop-blur-lg shadow-2xl ring-1 ring-orange-400/30",
+    button: "bg-gradient-to-r from-orange-400/90 to-rose-400/90 text-slate-900 border-orange-400 shadow-xl hover:shadow-rose-400/50"
+  },
 
-    teal: {
-      bg: "from-teal-950 via-teal-900 to-teal-950",
-      text: "text-teal-200",
-      primary: "teal",
-      card: "bg-teal-800/80 border-teal-500/60",
-      button: "bg-teal-700 text-teal-100 border-teal-500",
-    },
+  // Nordic Minimal - Clean icy blue with silver
+  "nordic": {
+    bg: "from-blue-950 via-slate-950 to-cyan-950",
+    text: "text-cyan-100",
+    primary: "cyan",
+    card: "bg-slate-800/95 border-cyan-400/50 backdrop-blur-md shadow-xl ring-1 ring-cyan-400/30",
+    button: "bg-gradient-to-r from-cyan-400/90 to-blue-400/90 text-slate-900 border-cyan-400 shadow-lg hover:shadow-cyan-400/50"
+  },
 
-    rose: {
-      bg: "from-rose-950 via-rose-900 to-rose-950",
-      text: "text-rose-200",
-      primary: "rose",
-      card: "bg-rose-800/80 border-rose-500/60",
-      button: "bg-rose-700 text-rose-100 border-rose-500",
-    },
-  };
+  // Vegas Gold - Casino luxury with champagne gradients
+  "vegas": {
+    bg: "from-amber-950 via-yellow-950 to-rose-950",
+    text: "text-slate-50",
+    primary: "yellow",
+    card: "bg-slate-800/95 border-yellow-400/70 backdrop-blur-lg shadow-2xl ring-1 ring-yellow-400/30",
+    button: "bg-gradient-to-r from-yellow-400/90 to-amber-400/90 text-slate-900 border-yellow-400 shadow-xl hover:shadow-amber-400/50"
+  },
+
+  // Shanghai Neon - Oriental luxury with magenta accents
+  "shanghai": {
+    bg: "from-fuchsia-950 via-rose-950 to-pink-950",
+    text: "text-slate-100",
+    primary: "fuchsia",
+    card: "bg-slate-800/95 border-fuchsia-400/60 backdrop-blur-lg shadow-xl ring-1 ring-fuchsia-500/30",
+    button: "bg-gradient-to-r from-fuchsia-500/90 to-pink-500/90 text-slate-50 border-fuchsia-400 shadow-xl hover:shadow-pink-400/40"
+  }
+};
+
 
   const currentTheme = themes[theme];
 
