@@ -195,7 +195,7 @@ const finishTest = async () => {
     };
 
     try {
-      await api.post("/stats/save", payload);
+      await api.post("/GrowTyping/v1/stats/save", payload);
     } catch (err) {
       console.error("Save failed", err);
     }
