@@ -49,7 +49,7 @@ The application emphasizes realistic typing behavior, including penalties for co
  ![GrowTyping](./screenshots/dash.png)
  ![GrowTyping](./screenshots/dash3.0.png)
 ### **Typing Test**
- ![GrowTyping](./screenshots/typing3.o.png)
+ ![GrowTyping](./screenshots/typing4.o.png)
 ### **Profile**
  ![GrowTyping](./screenshots/profile.png)
 ### **Login and Registration**
