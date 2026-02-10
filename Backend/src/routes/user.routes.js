@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {verifyJWT} from '../middlewares/auth.middleware.js';
+import {verifyJWT, optionalVerifyJWT} from '../middlewares/auth.middleware.js';
 import { registeruser,refreshAccessToken,
     loginuser,logoutuser, changeCurrentPassword,
     deleteUser,getUsername, updateDetails, getUserProfile
@@ -15,4 +15,20 @@ router.route('/deleteuser').post(verifyJWT, deleteUser);
 router.route('/getusername').get(verifyJWT, getUsername);
 router.route('/updatedetails').post(verifyJWT, updateDetails);
 router.route('/getuserprofile').get(verifyJWT, getUserProfile);
+router.get("/me", optionalVerifyJWT, (req, res) => {
+  if (!req.user) {
+    return res.status(200).json({
+      loggedIn: false,
+      user: null,
+    });
+  }
+
+  res.status(200).json({
+    loggedIn: true,
+    user: {
+      username: req.user.username,
+      email: req.user.email,
+    },
+  });
+});
 export default router;

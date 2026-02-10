@@ -15,6 +15,8 @@ const Dashboard = () => {
   const [bestRecordByType, setBestRecordByType] = useState({});
   const [allTimeBestByType, setAllTimeBestByType] = useState({});
   const [username, setUsername] = useState("User");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
 
   const api = axios.create({
     baseURL: import.meta.env.VITE_REACT_APP_API ,
@@ -130,16 +132,29 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userData = await api.get("GrowTyping/v1/users/getusername");
-        setUsername(userData.data.data.username || "User");
-      } catch (err) {
-        console.error("Error fetching user info:", err);
-      }
-    };
-    fetchUser();
-  }, []);
+  const fetchUser = async () => {
+    try {
+      const userData = await api.get("GrowTyping/v1/users/getusername");
+      setUsername(userData.data.data.username || "User");
+      setIsLoggedIn(true);
+    } catch (err) {
+      setIsLoggedIn(false);
+      setUsername("Guest");
+    }
+  };
+  fetchUser();
+}, []);
+
+const handleLogout = async () => {
+  try {
+    await api.post("GrowTyping/v1/users/logout");
+    setIsLoggedIn(false);
+    window.location.href = "/typing";
+  } catch (err) {
+    console.error("Logout failed", err);
+  }
+};
+
 
   useEffect(() => {
     fetchDashboard(range);
@@ -182,21 +197,40 @@ const Dashboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => (window.location.href = "/typing")}
-              className="bg-gradient-to-r from-gray-700 to-gray-600 shadow-lg rounded-full p-3 flex items-center justify-center hover:from-gray-600 hover:to-gray-500 hover:scale-105 transition-all text-white"
-              title="Back to Typing"
-            >
-              <FiArrowLeft size={20} />
-            </button>
-            <button
-              onClick={() => (window.location.href = "/settings")}
-              className="bg-gradient-to-r from-gray-700 to-gray-600 shadow-lg rounded-full p-3 flex items-center justify-center hover:from-gray-600 hover:to-gray-500 hover:scale-105 transition-all text-white"
-              title="Settings"
-            >
-              <FiSettings size={20} />
-            </button>
-          </div>
+
+  {!isLoggedIn ? (
+    <button
+      onClick={() => (window.location.href = "/login")}
+      className="bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg rounded-full px-5 py-3 text-white font-semibold hover:scale-105 transition-all"
+    >
+      Login
+    </button>
+  ) : (
+    <button
+      onClick={handleLogout}
+      className="bg-gradient-to-r from-red-600 to-red-500 shadow-lg rounded-full px-5 py-3 text-white font-semibold hover:scale-105 transition-all"
+    >
+      Logout
+    </button>
+  )}
+
+  <button
+    onClick={() => (window.location.href = "/typing")}
+    className="bg-gradient-to-r from-gray-700 to-gray-600 shadow-lg rounded-full p-3 flex items-center justify-center hover:from-gray-600 hover:to-gray-500 hover:scale-105 transition-all text-white"
+    title="Back to Typing"
+  >
+    <FiArrowLeft size={20} />
+  </button>
+
+  <button
+    onClick={() => (window.location.href = "/settings")}
+    className="bg-gradient-to-r from-gray-700 to-gray-600 shadow-lg rounded-full p-3 flex items-center justify-center hover:from-gray-600 hover:to-gray-500 hover:scale-105 transition-all text-white"
+    title="Settings"
+  >
+    <FiSettings size={20} />
+  </button>
+</div>
+
         </div>
       </div>
 

@@ -19,3 +19,20 @@ export const verifyJWT=asyncHandler(async(req,_,next)=>{
     throw new ApiError(401,`invalid access token!!!!! generated in file middlewares/aith.middelware.js ${err.message}`);
     }
 });
+export const optionalVerifyJWT = async (req, _, next) => {
+  try {
+    const token = req.cookies?.accessToken;
+    if (!token) return next();
+
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decoded._id).select("username email");
+    if (user) req.user = user;
+  } catch {
+    
+  }
+  next();
+};
