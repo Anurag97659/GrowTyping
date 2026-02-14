@@ -1,3 +1,13 @@
 {
-    "wake.compiler.solc.remappings": []
+    "wake.compiler.solc.remappings": [],
+    "files.exclude": {
+        "**/.git": false,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        ".vscode": true,
+        ".vscode/**": true,
+        ".hidden-items.json": true
+    }
 }

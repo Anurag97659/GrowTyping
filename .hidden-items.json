@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "hiddenItems": [
+    {
+      "path": "d:\\cse\\project_GrowTyping\\.vscode",
+      "name": ".vscode",
+      "type": "folder",
+      "workspaceFolder": "d:\\cse\\project_GrowTyping",
+      "children": [
+        "d:\\cse\\project_GrowTyping\\.vscode\\settings.json"
+      ]
+    },
+    {
+      "path": "d:\\cse\\project_GrowTyping\\.hidden-items.json",
+      "name": ".hidden-items.json",
+      "type": "file",
+      "workspaceFolder": "d:\\cse\\project_GrowTyping"
+    }
+  ]
+}
