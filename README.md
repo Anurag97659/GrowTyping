@@ -4,7 +4,7 @@
 ![React](https://img.shields.io/badge/Frontend-React-blue)
 ![Node.js](https://img.shields.io/badge/Backend-Node.js-green)
 ![MongoDB](https://img.shields.io/badge/Database-MongoDB-green)
-### **Live Demo:** [GrowTyping Demo](https://growtyping-1.onrender.com/login)
+### **Live Demo:** [GrowTyping Demo](https://growtyping-1.onrender.com/)
 
 ## **Project Overview**
 **GrowTyping** is a full-stack typing practice and analytics web application designed to help users improve their typing speed, accuracy, and overall performance. The platform provides an interactive environment where users can take timed typing tests with real English words, track their live performance, and analyze detailed statistics over time.
