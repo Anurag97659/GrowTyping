@@ -17,71 +17,35 @@ const Dashboard = () => {
   const [username, setUsername] = useState("User");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-
   const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API ,
+    baseURL: import.meta.env.VITE_REACT_APP_API,
     withCredentials: true,
   });
 
   const fetchDashboard = async (selectedRange) => {
     try {
       setLoading(true);
-
-      const statsData = await api.get(
-        `GrowTyping/v1/stats/dashboard?range=${selectedRange}`,
-      );
+      const statsData = await api.get(`GrowTyping/v1/stats/dashboard?range=${selectedRange}`);
       setStats(statsData.data.data);
-
-      const wpmData = await api.get(
-        `GrowTyping/v1/stats/average-wpm?range=${selectedRange}`,
-      );
+      const wpmData = await api.get(`GrowTyping/v1/stats/average-wpm?range=${selectedRange}`);
       setWpmByType(wpmData.data.data);
-
-      const accuracyData = await api.get(
-        `GrowTyping/v1/stats/average-accuracy?range=${selectedRange}`,
-      );
-      setAccuracyByType(
-        accuracyData.data.data.map((item) => ({
-          testType: item._id,
-          averageAccuracy: item.averageAccuracy ?? 0,
-        })),
-      );
-
-      const weakKeysData = await api.get(
-        `GrowTyping/v1/stats/weak-keys?range=${selectedRange}`,
-      );
+      const accuracyData = await api.get(`GrowTyping/v1/stats/average-accuracy?range=${selectedRange}`);
+      setAccuracyByType(accuracyData.data.data.map((item) => ({ testType: item._id, averageAccuracy: item.averageAccuracy ?? 0 })));
+      const weakKeysData = await api.get(`GrowTyping/v1/stats/weak-keys?range=${selectedRange}`);
       setWeakKeys(weakKeysData.data.data);
-
       const streakData = await api.get(`GrowTyping/v1/stats/streak`);
       setStreak(streakData.data.data.streak || 0);
-
-      const historyData = await api.get(
-        `GrowTyping/v1/stats/history?range=${selectedRange}`,
-      );
+      const historyData = await api.get(`GrowTyping/v1/stats/history?range=${selectedRange}`);
       const hist = historyData.data.data;
       setHistory(hist);
-
       const recordByType = {};
       hist.forEach((h) => {
         if (!recordByType[h.testType]) {
-          recordByType[h.testType] = {
-            highestWpm: h.wpm,
-            highestAccuracy: h.accuracy,
-            longestDuration: h.duration,
-          };
+          recordByType[h.testType] = { highestWpm: h.wpm, highestAccuracy: h.accuracy, longestDuration: h.duration };
         } else {
-          recordByType[h.testType].highestWpm = Math.max(
-            recordByType[h.testType].highestWpm,
-            h.wpm,
-          );
-          recordByType[h.testType].highestAccuracy = Math.max(
-            recordByType[h.testType].highestAccuracy,
-            h.accuracy,
-          );
-          recordByType[h.testType].longestDuration = Math.max(
-            recordByType[h.testType].longestDuration,
-            h.duration,
-          );
+          recordByType[h.testType].highestWpm = Math.max(recordByType[h.testType].highestWpm, h.wpm);
+          recordByType[h.testType].highestAccuracy = Math.max(recordByType[h.testType].highestAccuracy, h.accuracy);
+          recordByType[h.testType].longestDuration = Math.max(recordByType[h.testType].longestDuration, h.duration);
         }
       });
       setBestRecordByType(recordByType);
@@ -97,565 +61,438 @@ const Dashboard = () => {
       try {
         const allTimeData = await api.get(`GrowTyping/v1/stats/history`);
         const hist = allTimeData.data.data;
-
         const recordByType = {};
         hist.forEach((h) => {
           if (!recordByType[h.testType]) {
-            recordByType[h.testType] = {
-              highestWpm: h.wpm,
-              highestAccuracy: h.accuracy,
-              longestDuration: h.duration,
-            };
+            recordByType[h.testType] = { highestWpm: h.wpm, highestAccuracy: h.accuracy, longestDuration: h.duration };
           } else {
-            recordByType[h.testType].highestWpm = Math.max(
-              recordByType[h.testType].highestWpm,
-              h.wpm,
-            );
-            recordByType[h.testType].highestAccuracy = Math.max(
-              recordByType[h.testType].highestAccuracy,
-              h.accuracy,
-            );
-            recordByType[h.testType].longestDuration = Math.max(
-              recordByType[h.testType].longestDuration,
-              h.duration,
-            );
+            recordByType[h.testType].highestWpm = Math.max(recordByType[h.testType].highestWpm, h.wpm);
+            recordByType[h.testType].highestAccuracy = Math.max(recordByType[h.testType].highestAccuracy, h.accuracy);
+            recordByType[h.testType].longestDuration = Math.max(recordByType[h.testType].longestDuration, h.duration);
           }
         });
-
         setAllTimeBestByType(recordByType);
       } catch (err) {
         console.error("Error fetching all-time best:", err);
       }
     };
-
     fetchAllTimeBest();
   }, []);
 
   useEffect(() => {
-  const fetchUser = async () => {
+    const fetchUser = async () => {
+      try {
+        const userData = await api.get("GrowTyping/v1/users/getusername");
+        setUsername(userData.data.data.username || "User");
+        setIsLoggedIn(true);
+      } catch (err) {
+        setIsLoggedIn(false);
+        setUsername("Guest");
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
     try {
-      const userData = await api.get("GrowTyping/v1/users/getusername");
-      setUsername(userData.data.data.username || "User");
-      setIsLoggedIn(true);
-    } catch (err) {
+      await api.post("GrowTyping/v1/users/logout");
       setIsLoggedIn(false);
-      setUsername("Guest");
+      window.location.href = "/typing";
+    } catch (err) {
+      console.error("Logout failed", err);
     }
   };
-  fetchUser();
-}, []);
-
-const handleLogout = async () => {
-  try {
-    await api.post("GrowTyping/v1/users/logout");
-    setIsLoggedIn(false);
-    window.location.href = "/typing";
-  } catch (err) {
-    console.error("Logout failed", err);
-  }
-};
-
 
   useEffect(() => {
     fetchDashboard(range);
   }, [range]);
 
+  const rangeLabel = {
+    today: "Today", lastDay: "Last Day", lastWeek: "Last Week",
+    lastMonth: "Last Month", last6Months: "Last 6 Months",
+    thisYear: "This Year", previousYears: "Previous Years",
+  };
+
   if (loading)
     return (
-      <div className="text-center mt-10 text-gray-500 text-lg">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen bg-[#0f0f1a]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-violet-300 text-lg font-semibold tracking-widest animate-pulse">Loading Dashboard...</p>
+        </div>
+      </div>
     );
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen font-sans">
+    <div
+      className="min-h-screen font-sans text-white"
+      style={{ background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)" }}
+    >
      
-      <div className="flex flex-col items-center mb-8">
-        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-8 uppercase tracking-wider">
-          Dashboard
-        </h1>
-        
-        <div className="w-full flex justify-between items-center">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg rounded-full px-6 py-3 font-semibold text-white hover:scale-105 transition-transform text-sm uppercase">
-            {username}
-          </div>
-          <div className="bg-gray-800 rounded-2xl p-2 shadow-xl border border-gray-700">
-            <label className="mr-2 font-semibold text-gray-300 text-sm">
-              Select Range:
-            </label>
+      <div className="sticky top-0 z-50 backdrop-blur-xl bg-black/30 border-b border-white/10 px-8 py-4 flex items-center justify-between shadow-2xl">
+        <div className="flex items-center gap-3">
+          {/* <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+            <span className="text-white font-black text-sm">GT</span>
+          </div> */}
+          <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
+            GrowTyping
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2">
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Range</label>
             <select
               value={range}
               onChange={(e) => setRange(e.target.value)}
-              className="border border-gray-600 rounded-lg p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white text-sm"
+              className="bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer"
             >
-              <option value="today">Today</option>
-              <option value="lastDay">Last Day</option>
-              <option value="lastWeek">Last Week</option>
-              <option value="lastMonth">Last Month</option>
-              <option value="last6Months">Last 6 Months</option>
-              <option value="thisYear">This Year</option>
-              <option value="previousYears">Previous Years</option>
+              <option value="today" className="bg-[#1a1a2e]">Today</option>
+              <option value="lastDay" className="bg-[#1a1a2e]">Last Day</option>
+              <option value="lastWeek" className="bg-[#1a1a2e]">Last Week</option>
+              <option value="lastMonth" className="bg-[#1a1a2e]">Last Month</option>
+              <option value="last6Months" className="bg-[#1a1a2e]">Last 6 Months</option>
+              <option value="thisYear" className="bg-[#1a1a2e]">This Year</option>
+              <option value="previousYears" className="bg-[#1a1a2e]">Previous Years</option>
             </select>
           </div>
 
-          <div className="flex items-center gap-4">
-
-  {!isLoggedIn ? (
-    <button
-      onClick={() => (window.location.href = "/login")}
-      className="bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg rounded-full px-5 py-3 text-white font-semibold hover:scale-105 transition-all"
-    >
-      Login
-    </button>
-  ) : (
-    <button
-      onClick={handleLogout}
-      className="bg-gradient-to-r from-red-600 to-red-500 shadow-lg rounded-full px-5 py-3 text-white font-semibold hover:scale-105 transition-all"
-    >
-      Logout
-    </button>
-  )}
-
-  <button
-    onClick={() => (window.location.href = "/typing")}
-    className="bg-gradient-to-r from-gray-700 to-gray-600 shadow-lg rounded-full p-3 flex items-center justify-center hover:from-gray-600 hover:to-gray-500 hover:scale-105 transition-all text-white"
-    title="Back to Typing"
-  >
-    <FiArrowLeft size={20} />
-  </button>
-
-  <button
-    onClick={() => (window.location.href = "/settings")}
-    className="bg-gradient-to-r from-gray-700 to-gray-600 shadow-lg rounded-full p-3 flex items-center justify-center hover:from-gray-600 hover:to-gray-500 hover:scale-105 transition-all text-white"
-    title="Settings"
-  >
-    <FiSettings size={20} />
-  </button>
-</div>
-
-        </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        {[
-          {
-            label: "Total Sessions",
-            value: stats.totalSessions || 0,
-            color: "from-green-600 to-green-800",
-          },
-          {
-            label: "Total Time (s)",
-            value: stats.totalTime || 0,
-            color: "from-green-600 to-green-800",
-          },
-          {
-            label: "Average WPM",
-            value:
-              stats.avgWpm !== undefined && stats.avgWpm !== null
-                ? stats.avgWpm.toFixed(2)
-                : 0,
-            color: "from-green-600 to-green-800",
-          },
-          {
-            label: "Typing Streak",
-            value: streak,
-            color: "from-green-600 to-green-800",
-          },
-        ].map((card, idx) => (
-          <div
-            key={idx}
-            className={`bg-gradient-to-br ${card.color} shadow-2xl rounded-2xl p-6 text-center transform hover:scale-105 transition-all border border-gray-600`}
-          >
-            <div className="text-gray-200 font-medium text-sm">{card.label}</div>
-            <div className="text-3xl font-bold mt-3 text-white">{card.value}</div>
+          <div className="flex items-center gap-2 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/30 rounded-xl px-4 py-2">
+            <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></div>
+            <span className="text-sm font-semibold text-violet-300">{username}</span>
           </div>
-        ))}
-      </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-6 text-gray-100">
-          Best Record in {range === "today" ? "Today" : range === "lastDay" ? "Last Day" : range === "lastWeek" ? "Last Week" : range === "lastMonth" ? "Last Month" : range === "last6Months" ? "Last 6 Months" : range === "thisYear" ? "This Year" : "Previous Years"}
-        </h2>
-        <div className="grid grid-cols-4 gap-6">
-          {["15s", "30s", "60s", "custom"].map((type) => {
-            const record = bestRecordByType[type] || {
-              highestWpm: 0,
-              highestAccuracy: 0,
-              longestDuration: 0,
-            };
-            return (
-              <div
-                key={type}
-                className="bg-gradient-to-br from-gray-800 to-gray-700 shadow-xl rounded-2xl p-6 text-center hover:shadow-2xl transition-all border border-gray-600"
-              >
-                <div className="text-gray-400 font-semibold mb-4 text-sm uppercase tracking-wide">
-                  {type} Test
-                </div>
-                <div className="text-gray-300 mb-2">
-                  WPM: <span className="font-bold text-blue-400">{record.highestWpm}</span>
-                </div>
-                <div className="text-gray-300 mb-2">
-                  Accuracy:{" "}
-                  <span className="font-bold text-green-400">{record.highestAccuracy}%</span>
-                </div>
-                <div className="text-gray-300">
-                  Duration:{" "}
-                  <span className="font-bold text-purple-400">{record.longestDuration}s</span>
-                </div>
-              </div>
-            );
-          })}
+          {!isLoggedIn ? (
+            <button
+              onClick={() => (window.location.href = "/login")}
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 px-5 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 hover:shadow-lg hover:shadow-violet-500/30"
+            >
+              Login
+            </button>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="bg-gradient-to-r from-rose-600/20 to-red-600/20 border border-rose-500/30 hover:from-rose-600 hover:to-red-600 px-5 py-2 rounded-xl text-sm font-semibold text-rose-400 hover:text-white transition-all hover:scale-105"
+            >
+              Logout
+            </button>
+          )}
+
+          <button
+            onClick={() => (window.location.href = "/typing")}
+            className="bg-white/5 border border-white/10 hover:bg-white/10 p-2.5 rounded-xl transition-all hover:scale-105 text-gray-400 hover:text-white"
+            title="Back to Typing"
+          >
+            <FiArrowLeft size={18} />
+          </button>
+
+          <button
+            onClick={() => (window.location.href = "/settings")}
+            className="bg-white/5 border border-white/10 hover:bg-white/10 p-2.5 rounded-xl transition-all hover:scale-105 text-gray-400 hover:text-white"
+            title="Settings"
+          >
+            <FiSettings size={18} />
+          </button>
         </div>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-6 text-gray-100">
-          All-Time Best Record
-        </h2>
-        <div className="grid grid-cols-4 gap-6">
-          {["15s", "30s", "60s", "custom"].map((type) => {
-            const record = allTimeBestByType[type] || {
-              highestWpm: 0,
-              highestAccuracy: 0,
-              longestDuration: 0,
-            };
-            return (
-              <div
-                key={type}
-                className="bg-gradient-to-br from-yellow-900 to-yellow-800 shadow-xl rounded-2xl p-6 text-center hover:shadow-2xl transition-all border border-yellow-600"
-              >
-                <div className="text-yellow-300 font-semibold mb-4 text-sm uppercase tracking-wide">
-                  {type} Test
-                </div>
-                <div className="text-gray-200 mb-2">
-                  WPM: <span className="font-bold text-yellow-300">{record.highestWpm}</span>
-                </div>
-                <div className="text-gray-200 mb-2">
-                  Accuracy:{" "}
-                  <span className="font-bold text-yellow-300">{record.highestAccuracy}%</span>
-                </div>
-                <div className="text-gray-200">
-                  Duration:{" "}
-                  <span className="font-bold text-yellow-300">{record.longestDuration}s</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-700 shadow-xl rounded-2xl p-6 border border-gray-600">
-          <h2 className="text-xl font-semibold mb-4 text-blue-400">
-            Average WPM by Test Type
+      <div className="px-8 py-8 max-w-screen-2xl mx-auto">
+        
+        <div className="mb-10">
+          <h2 className="text-4xl font-black tracking-tight bg-gradient-to-r from-white via-violet-200 to-indigo-300 bg-clip-text text-transparent">
+            Dashboard
           </h2>
-          <svg width="100%" height="220">
-            {(() => {
-              const maxWpm = Math.max(
-                50,
-                ...wpmByType.map((item) => item.averageWpm ?? 0),
-              );
-              const step = Math.ceil(maxWpm / 6);
-
-              return (
-                <>
-                  {[0, 1, 2, 3, 4, 5, 6].map((i) => {
-                    const val = i * step;
-                    return (
-                      <g key={i}>
-                        <line
-                          x1="30"
-                          y1={200 - (val / maxWpm) * 180}
-                          x2="500"
-                          y2={200 - (val / maxWpm) * 180}
-                          stroke="#374151"
-                          strokeWidth="1"
-                        />
-                        <text
-                          x="0"
-                          y={200 - (val / maxWpm) * 180 + 4}
-                          fontSize="12"
-                          fill="#9CA3AF"
-                        >
-                          {val}
-                        </text>
-                      </g>
-                    );
-                  })}
-                  <line
-                    x1="30"
-                    y1="200"
-                    x2="500"
-                    y2="200"
-                    stroke="#60A5FA"
-                    strokeWidth="1.5"
-                  />
-                </>
-              );
-            })()}
-
-            {wpmByType.map((item, index) => {
-              const avgWpm = item.averageWpm ?? 0;
-              const maxWpm = Math.max(
-                50,
-                ...wpmByType.map((i) => i.averageWpm ?? 0),
-              );
-              const barHeight = (avgWpm / maxWpm) * 180;
-
-              return (
-                <g key={index}>
-                  <rect
-                    x={index * 60 + 40}
-                    y={200 - barHeight}
-                    width="40"
-                    height={barHeight}
-                    fill={`rgb(96,165,250,${0.5 + avgWpm / maxWpm})`}
-                    rx="6"
-                  />
-                  <text
-                    x={index * 60 + 60}
-                    y={200 - barHeight - 8}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="#93C5FD"
-                  >
-                    {avgWpm.toFixed(1)}
-                  </text>
-                  <text
-                    x={index * 60 + 60}
-                    y={215}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="#9CA3AF"
-                  >
-                    {item._id}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+          <p className="text-gray-500 mt-1 text-sm">
+            Showing stats for <span className="text-violet-400 font-semibold">{rangeLabel[range]}</span>
+          </p>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-700 shadow-xl rounded-2xl p-6 border border-gray-600">
-          <h2 className="text-xl font-semibold mb-4 text-green-400">
-            Average Accuracy by Test Type (%)
-          </h2>
-          <svg width="100%" height="220">
-            {[0, 20, 40, 60, 80, 100].map((val, idx) => (
-              <g key={idx}>
-                <line
-                  x1="30"
-                  y1={200 - (val / 100) * 180}
-                  x2="500"
-                  y2={200 - (val / 100) * 180}
-                  stroke="#374151"
-                  strokeWidth="1"
-                />
-                <text
-                  x="0"
-                  y={200 - (val / 100) * 180 + 4}
-                  fontSize="12"
-                  fill="#9CA3AF"
+       
+        <div className="grid grid-cols-4 gap-5 mb-10">
+          {[
+            { label: "Total Sessions", value: stats.totalSessions || 0, color: "from-violet-600/20 to-violet-800/10", border: "border-violet-500/20", text: "text-violet-400" },
+            { label: "Total Time (s)", value: stats.totalTime || 0,  color: "from-cyan-600/20 to-cyan-800/10", border: "border-cyan-500/20", text: "text-cyan-400" },
+            { label: "Average WPM", value: stats.avgWpm !== undefined && stats.avgWpm !== null ? stats.avgWpm.toFixed(2) : 0,  color: "from-emerald-600/20 to-emerald-800/10", border: "border-emerald-500/20", text: "text-emerald-400" },
+            { label: "Typing Streak ", value: `${streak} days`, color: "from-orange-600/20 to-orange-800/10", border: "border-orange-500/20", text: "text-orange-400" },
+          ].map((card, idx) => (
+            <div
+              key={idx}
+              className={`bg-gradient-to-br ${card.color} border ${card.border} rounded-2xl p-6 hover:scale-105 transition-all duration-300 hover:shadow-xl group cursor-default`}
+            >
+              <div className="text-3xl mb-3">{card.icon}</div>
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">{card.label}</div>
+              <div className={`text-3xl font-black ${card.text}`}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+
+        
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+            <h2 className="text-xl font-bold text-white">Best Record — <span className="text-violet-400">{rangeLabel[range]}</span></h2>
+          </div>
+          <div className="grid grid-cols-4 gap-5">
+            {["15s", "30s", "60s", "custom"].map((type) => {
+              const record = bestRecordByType[type] || { highestWpm: 0, highestAccuracy: 0, longestDuration: 0 };
+              return (
+                <div
+                  key={type}
+                  className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300 hover:scale-[1.02] group"
                 >
-                  {val}
-                </text>
-              </g>
-            ))}
-            <line
-              x1="30"
-              y1="200"
-              x2="500"
-              y2="200"
-              stroke="#4ADE80"
-              strokeWidth="1.5"
-            />
-            {accuracyByType.map((item, index) => {
-              const avgAcc = item.averageAccuracy ?? 0;
-              const barHeight = (avgAcc / 100) * 180;
-
-              return (
-                <g key={index}>
-                  <rect
-                    x={index * 60 + 40}
-                    y={200 - barHeight}
-                    width="40"
-                    height={barHeight}
-                    fill={`rgb(74,222,128,${0.5 + avgAcc / 100})`}
-                    rx="6"
-                  />
-                  <text
-                    x={index * 60 + 60}
-                    y={200 - barHeight - 8}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="#86EFAC"
-                  >
-                    {avgAcc.toFixed(1)}
-                  </text>
-                  <text
-                    x={index * 60 + 60}
-                    y={215}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="#9CA3AF"
-                  >
-                    {item.testType}
-                  </text>
-                </g>
+                  <div className="inline-block bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-1 text-xs font-bold text-violet-400 uppercase tracking-wider mb-5">
+                    {type} Test
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">WPM</span>
+                      <span className="font-black text-lg text-violet-300">{record.highestWpm}</span>
+                    </div>
+                    <div className="h-px bg-white/5"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Accuracy</span>
+                      <span className="font-black text-lg text-emerald-400">{record.highestAccuracy}%</span>
+                    </div>
+                    <div className="h-px bg-white/5"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Duration</span>
+                      <span className="font-black text-lg text-cyan-400">{record.longestDuration}s</span>
+                    </div>
+                  </div>
+                </div>
               );
             })}
-          </svg>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-700 shadow-xl rounded-2xl p-6 border border-gray-600">
-          <h2 className="text-xl font-semibold mb-4 text-red-400">
-            Top Weak Keys
-          </h2>
-          <svg width="100%" height="220">
-            {(() => {
-              const maxMistakes = Math.max(
-                10,
-                ...weakKeys.map((item) => item.totalMistakes ?? 0),
-              );
-              const step = Math.ceil(maxMistakes / 6);
-
+    
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
+            <h2 className="text-xl font-bold text-white">All-Time Best <span className="text-amber-400"></span></h2>
+          </div>
+          <div className="grid grid-cols-4 gap-5">
+            {["15s", "30s", "60s", "custom"].map((type) => {
+              const record = allTimeBestByType[type] || { highestWpm: 0, highestAccuracy: 0, longestDuration: 0 };
               return (
-                <>
-                  {[0, 1, 2, 3, 4, 5, 6].map((i) => {
-                    const val = i * step;
-                    return (
-                      <g key={i}>
-                        <line
-                          x1="30"
-                          y1={200 - (val / maxMistakes) * 180}
-                          x2="500"
-                          y2={200 - (val / maxMistakes) * 180}
-                          stroke="#374151"
-                          strokeWidth="1"
-                        />
-                        <text
-                          x="0"
-                          y={200 - (val / maxMistakes) * 180 + 4}
-                          fontSize="12"
-                          fill="#9CA3AF"
-                        >
-                          {val}
-                        </text>
-                      </g>
-                    );
-                  })}
-                  <line
-                    x1="30"
-                    y1="200"
-                    x2="500"
-                    y2="200"
-                    stroke="#EF4444"
-                    strokeWidth="1.5"
-                  />
-                </>
-              );
-            })()}
-
-            {weakKeys.map((item, index) => {
-              const mistakes = item.totalMistakes ?? 0;
-              const maxMistakes = Math.max(
-                10,
-                ...weakKeys.map((i) => i.totalMistakes ?? 0),
-              );
-              const barHeight = (mistakes / maxMistakes) * 180;
-
-              return (
-                <g key={index}>
-                  <rect
-                    x={index * 60 + 40}
-                    y={200 - barHeight}
-                    width="40"
-                    height={barHeight}
-                    fill={`rgb(239,68,68,${0.5 + mistakes / maxMistakes})`}
-                    rx="6"
-                  />
-                  <text
-                    x={index * 60 + 60}
-                    y={200 - barHeight - 8}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="#FCA5A5"
-                  >
-                    {mistakes}
-                  </text>
-                  <text
-                    x={index * 60 + 60}
-                    y={215}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="#9CA3AF"
-                  >
-                    {item._id}
-                  </text>
-                </g>
+                <div
+                  key={type}
+                  className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-2xl p-6 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="inline-block bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1 text-xs font-bold text-amber-400 uppercase tracking-wider mb-5">
+                    {type} Test
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">WPM</span>
+                      <span className="font-black text-lg text-amber-300">{record.highestWpm}</span>
+                    </div>
+                    <div className="h-px bg-white/5"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Accuracy</span>
+                      <span className="font-black text-lg text-amber-300">{record.highestAccuracy}%</span>
+                    </div>
+                    <div className="h-px bg-white/5"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 uppercase tracking-wider">Duration</span>
+                      <span className="font-black text-lg text-amber-300">{record.longestDuration}s</span>
+                    </div>
+                  </div>
+                </div>
               );
             })}
-          </svg>
+          </div>
         </div>
-      </div>
 
-      <div className="bg-gradient-to-br from-gray-800 to-gray-700 shadow-xl rounded-2xl p-6 border border-gray-600 overflow-hidden">
-        <h2 className="text-xl font-semibold mb-6 text-gray-100">
-          Typing History
-        </h2>
-        <div className="overflow-x-auto rounded-xl">
-          <table className="min-w-full text-gray-300">
-            <thead className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl">
-              <tr>
-                {[
-                  "Date",
-                  "Test Type",
-                  "WPM",
-                  "Accuracy (%)",
-                  "Duration (s)",
-                  "Characters Typed",
-                  "Correct Chars",
-                  "Wrong Chars",
-                ].map((th) => (
-                  <th
-                    key={th}
-                    className="px-6 py-4 border-b border-gray-600 text-left font-semibold text-gray-200"
-                  >
-                    {th}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {history.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-6 text-gray-400">
-                    No typing history available
-                  </td>
+       
+        <div className="grid grid-cols-3 gap-6 mb-10">
+          <div className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-violet-500/30 transition-all">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-2.5 h-2.5 rounded-full bg-violet-400"></div>
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Avg WPM by Type</h3>
+            </div>
+            <svg width="100%" height="220">
+              {(() => {
+                const maxWpm = Math.max(50, ...wpmByType.map((item) => item.averageWpm ?? 0));
+                const step = Math.ceil(maxWpm / 5);
+                return (
+                  <>
+                    {[0, 1, 2, 3, 4, 5].map((i) => {
+                      const val = i * step;
+                      return (
+                        <g key={i}>
+                          <line x1="35" y1={200 - (val / maxWpm) * 170} x2="95%" y2={200 - (val / maxWpm) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <text x="0" y={200 - (val / maxWpm) * 170 + 4} fontSize="10" fill="#6B7280">{val}</text>
+                        </g>
+                      );
+                    })}
+                    <line x1="35" y1="200" x2="95%" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                  </>
+                );
+              })()}
+              {wpmByType.map((item, index) => {
+                const avgWpm = item.averageWpm ?? 0;
+                const maxWpm = Math.max(50, ...wpmByType.map((i) => i.averageWpm ?? 0));
+                const barHeight = (avgWpm / maxWpm) * 170;
+                return (
+                  <g key={index}>
+                    <defs>
+                      <linearGradient id={`wpmGrad${index}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a78bfa" />
+                        <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.6" />
+                      </linearGradient>
+                    </defs>
+                    <rect x={index * 65 + 40} y={200 - barHeight} width="42" height={barHeight} fill={`url(#wpmGrad${index})`} rx="6" />
+                    <text x={index * 65 + 61} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#c4b5fd" fontWeight="bold">{avgWpm.toFixed(1)}</text>
+                    <text x={index * 65 + 61} y={216} textAnchor="middle" fontSize="11" fill="#6B7280">{item._id}</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+         
+          <div className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-emerald-500/30 transition-all">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Avg Accuracy by Type</h3>
+            </div>
+            <svg width="100%" height="220">
+              {[0, 20, 40, 60, 80, 100].map((val, idx) => (
+                <g key={idx}>
+                  <line x1="35" y1={200 - (val / 100) * 170} x2="95%" y2={200 - (val / 100) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <text x="0" y={200 - (val / 100) * 170 + 4} fontSize="10" fill="#6B7280">{val}</text>
+                </g>
+              ))}
+              <line x1="35" y1="200" x2="95%" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              {accuracyByType.map((item, index) => {
+                const avgAcc = item.averageAccuracy ?? 0;
+                const barHeight = (avgAcc / 100) * 170;
+                return (
+                  <g key={index}>
+                    <defs>
+                      <linearGradient id={`accGrad${index}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="100%" stopColor="#059669" stopOpacity="0.6" />
+                      </linearGradient>
+                    </defs>
+                    <rect x={index * 65 + 40} y={200 - barHeight} width="42" height={barHeight} fill={`url(#accGrad${index})`} rx="6" />
+                    <text x={index * 65 + 61} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#6ee7b7" fontWeight="bold">{avgAcc.toFixed(1)}</text>
+                    <text x={index * 65 + 61} y={216} textAnchor="middle" fontSize="11" fill="#6B7280">{item.testType}</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+
+          <div className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-rose-500/30 transition-all">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Top Weak Keys</h3>
+            </div>
+            <svg width="100%" height="220">
+              {(() => {
+                const maxMistakes = Math.max(10, ...weakKeys.map((item) => item.totalMistakes ?? 0));
+                const step = Math.ceil(maxMistakes / 5);
+                return (
+                  <>
+                    {[0, 1, 2, 3, 4, 5].map((i) => {
+                      const val = i * step;
+                      return (
+                        <g key={i}>
+                          <line x1="35" y1={200 - (val / maxMistakes) * 170} x2="95%" y2={200 - (val / maxMistakes) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <text x="0" y={200 - (val / maxMistakes) * 170 + 4} fontSize="10" fill="#6B7280">{val}</text>
+                        </g>
+                      );
+                    })}
+                    <line x1="35" y1="200" x2="95%" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                  </>
+                );
+              })()}
+              {weakKeys.map((item, index) => {
+                const mistakes = item.totalMistakes ?? 0;
+                const maxMistakes = Math.max(10, ...weakKeys.map((i) => i.totalMistakes ?? 0));
+                const barHeight = (mistakes / maxMistakes) * 170;
+                return (
+                  <g key={index}>
+                    <defs>
+                      <linearGradient id={`weakGrad${index}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fb7185" />
+                        <stop offset="100%" stopColor="#be123c" stopOpacity="0.6" />
+                      </linearGradient>
+                    </defs>
+                    <rect x={index * 65 + 40} y={200 - barHeight} width="42" height={barHeight} fill={`url(#weakGrad${index})`} rx="6" />
+                    <text x={index * 65 + 61} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#fda4af" fontWeight="bold">{mistakes}</text>
+                    <text x={index * 65 + 61} y={216} textAnchor="middle" fontSize="11" fill="#6B7280">{item._id}</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+
+        
+        <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all">
+          <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+              <h2 className="text-lg font-bold text-white">Typing History</h2>
+            </div>
+            <span className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+              {history.length} records
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="bg-white/3">
+                  {["Date", "Test Type", "WPM", "Accuracy", "Duration", "Chars Typed", "Correct", "Wrong"].map((th) => (
+                    <th key={th} className="px-5 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      {th}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                history.map((item, idx) => (
-                  <tr
-                    key={item._id || idx}
-                    className={
-                      idx % 2 === 0
-                        ? "bg-gray-800 hover:bg-gray-700 transition-all border-b border-gray-700"
-                        : "bg-gray-750 hover:bg-gray-700 transition-all border-b border-gray-700"
-                    }
-                  >
-                    <td className="px-6 py-4 text-gray-300">
-                      {new Date(item.testDate).toLocaleDateString()}
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {history.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-16 text-gray-600">
+                      <div className="text-4xl mb-3">📊</div>
+                      <div className="text-sm">No typing history available for this range</div>
                     </td>
-                    <td className="px-6 py-4 text-blue-400 font-medium">{item.testType}</td>
-                    <td className="px-6 py-4 text-green-400 font-medium">{item.wpm}</td>
-                    <td className="px-6 py-4 text-yellow-400 font-medium">{item.accuracy}</td>
-                    <td className="px-6 py-4 text-purple-400 font-medium">{item.duration}</td>
-                    <td className="px-6 py-4 text-gray-300">{item.charactersTyped}</td>
-                    <td className="px-6 py-4 text-green-400 font-medium">{item.correctChars}</td>
-                    <td className="px-6 py-4 text-red-400 font-medium">{item.incorrectChars}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  history.map((item, idx) => (
+                    <tr key={item._id || idx} className="hover:bg-white/5 transition-colors group">
+                      <td className="px-5 py-4 text-sm text-gray-400">{new Date(item.testDate).toLocaleDateString()}</td>
+                      <td className="px-5 py-4">
+                        <span className="inline-block bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-bold rounded-lg px-2.5 py-1">
+                          {item.testType}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-bold text-violet-300">{item.wpm}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-bold text-emerald-400">{item.accuracy}%</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-bold text-cyan-400">{item.duration}s</span>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-400">{item.charactersTyped}</td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-bold text-emerald-400">{item.correctChars}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-bold text-rose-400">{item.incorrectChars}</span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -46,8 +46,9 @@ The application emphasizes realistic typing behavior, including penalties for co
 ---
 ## **Preview**
 ### **Dashboard**
- ![GrowTyping](./screenshots/dash.png)
- ![GrowTyping](./screenshots/dash3.0.png)
+ ![GrowTyping](./screenshots/dash3.1.png)
+ ![GrowTyping](./screenshots/dash3.2.png)
+ ![GrowTyping](./screenshots/dash3.3.png)
 ### **Typing Test**
  ![GrowTyping](./screenshots/typing4.o.png)
 ### **Profile**
