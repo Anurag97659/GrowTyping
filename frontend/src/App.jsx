@@ -7,6 +7,7 @@ import Dashboard from "./components/dashboard";
 import Settings from "./components/settings";
 import ChangeDetails from "./components/change-details";
 import ChangePassword from "./components/change-password";
+import VerifyEmail from "./components/verify-email";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/typing" element={<TypingPage />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/edit-profile" element={<ChangeDetails />} />

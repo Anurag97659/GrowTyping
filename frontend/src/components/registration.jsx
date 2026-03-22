@@ -30,11 +30,14 @@ function Registration() {
       if (res.data.error) {
         alert(res.data.error);
       } else {
-        alert("Registration successful!");
-        window.location.href = "/login";
+        const fallbackLink = res?.data?.data?.verificationUrl;
+        const message = fallbackLink
+          ? `Registration successful. Open this verification link: ${fallbackLink}`
+          : "Registration successful. Please check your email and verify your account before login.";
+        alert(message);
       }
     } catch (error) {
-      alert("User or email already exists. Try again.");
+      alert(error?.response?.data?.message || "Registration failed. Try again.");
     }
   };
 

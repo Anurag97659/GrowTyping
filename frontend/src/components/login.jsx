@@ -27,7 +27,7 @@ function Login() {
         window.location.href = "/typing";
       }
     } catch (error) {
-      alert("Login failed: " + error.message);
+      alert(error?.response?.data?.message || "Login failed. Please try again.");
     }
   };
   return(

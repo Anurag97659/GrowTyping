@@ -1,12 +1,21 @@
 import { Router } from "express";
 import {verifyJWT, optionalVerifyJWT} from '../middlewares/auth.middleware.js';
-import { registeruser,refreshAccessToken,
-    loginuser,logoutuser, changeCurrentPassword,
-    deleteUser,getUsername, updateDetails, getUserProfile
- } from "../controller/user.controller.js";  
+import {
+  registeruser,
+  refreshAccessToken,
+  loginuser,
+  logoutuser,
+  changeCurrentPassword,
+  deleteUser,
+  getUsername,
+  updateDetails,
+  getUserProfile,
+  verifyEmail,
+} from "../controller/user.controller.js";
 
 const router = Router();
 router.route('/register').post(registeruser);
+router.route('/verify-email').get(verifyEmail);
 router.route('/refreshtoken').get(refreshAccessToken);
 router.route('/login').post(loginuser);
 router.route('/logout').post(verifyJWT, logoutuser);
