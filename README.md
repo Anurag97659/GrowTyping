@@ -32,7 +32,8 @@ The application emphasizes realistic typing behavior, including penalties for co
 - **Database:** MongoDB Atlas (NoSQL)
 - **HTTP Client:** Axios
 - **Routing:** React Router
-- **Authentication & Session Management:** JWT or cookies
+- **Authentication & Session Management:** JWT or cookies and nodemailer
+- **Deployment:** Render.com or similar hosting service
 
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
@@ -42,6 +43,7 @@ The application emphasizes realistic typing behavior, including penalties for co
 ![Axios](https://img.shields.io/badge/Axios-5A29E4?style=flat&logo=axios&logoColor=white)
 ![React Router](https://img.shields.io/badge/React%20Router-CA4245?style=flat&logo=react-router&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=flat&logo=json-web-tokens&logoColor=white)
+![Nodemailer](https://img.shields.io/badge/Nodemailer-000000?style=flat&logo=nodemailer&logoColor=white)
 
 ---
 ## **Preview**
