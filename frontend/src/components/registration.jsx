@@ -31,9 +31,14 @@ function Registration() {
         alert(res.data.error);
       } else {
         const fallbackLink = res?.data?.data?.verificationUrl;
-        const message = fallbackLink
-          ? `Registration successful. Open this verification link: ${fallbackLink}`
-          : "Registration successful. Please check your email and verify your account before login.";
+        const message =
+          res?.data?.message ||
+          "Registration successful. Please check your email and verify your account before login.";
+
+        if (fallbackLink && import.meta.env.DEV) {
+          console.info("Verification link (dev fallback):", fallbackLink);
+        }
+
         alert(message);
       }
     } catch (error) {

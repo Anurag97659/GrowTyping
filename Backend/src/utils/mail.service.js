@@ -14,10 +14,27 @@ if(hasSmtpConfig){
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT),
         secure: process.env.SMTP_SECURE === "true",
+        connectionTimeout: 20000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000,
         auth:{
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
+    });
+
+    transporter.verify((error) => {
+        if (error) {
+            console.error("SMTP verify failed", {
+                message: error?.message,
+                code: error?.code,
+                command: error?.command,
+                responseCode: error?.responseCode,
+                response: error?.response,
+            });
+            return;
+        }
+        console.log("SMTP transporter verified successfully");
     });
 }
 

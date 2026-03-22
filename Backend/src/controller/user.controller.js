@@ -59,6 +59,7 @@ const registeruser = asyncHandler(async (req, res) => {
     const verificationUrl = `${clientUrl}/verify-email?token=${rawToken}&id=${user._id}`;
 
     let mailSent = false;
+    let mailError = null;
     try {
         await sendVerificationMail({
             to: user.email,
@@ -67,7 +68,21 @@ const registeruser = asyncHandler(async (req, res) => {
         });
         mailSent = true;
     } catch (error) {
-        console.error("Verification email send failed:", error?.message || error);
+        mailError = error;
+        console.error("Verification email send failed", {
+            message: error?.message,
+            code: error?.code,
+            command: error?.command,
+            responseCode: error?.responseCode,
+            response: error?.response,
+        });
+    }
+
+    if (!mailSent && process.env.NODE_ENV === "production") {
+        throw new ApiError(
+            502,
+            "Could not send verification email. Please try again in a minute."
+        );
     }
 
     return res.status(201).json(
@@ -75,7 +90,12 @@ const registeruser = asyncHandler(async (req, res) => {
             201,
             {
                 email: user.email,
-                verificationUrl: mailSent && hasSmtpConfig ? undefined : verificationUrl,
+                verificationUrl:
+                    mailSent && hasSmtpConfig ? undefined : verificationUrl,
+                mailError:
+                    process.env.NODE_ENV === "production"
+                        ? undefined
+                        : mailError?.message,
             },
             mailSent
                 ? "Registration successful. Please verify your email to activate your account"
