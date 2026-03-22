@@ -5,10 +5,6 @@ import jwt from "jsonwebtoken";
 import {ApiResponse} from '../utils/ApiResponse.js';
 import crypto from "crypto";
 import { sendVerificationMail, hasSmtpConfig } from "../utils/mail.service.js";
-import dotenv from "dotenv";
-dotenv.config({
-    path: "/.env"
-});
 
 const cookieOptions = {
   httpOnly: true,
@@ -62,20 +58,28 @@ const registeruser = asyncHandler(async (req, res) => {
         process.env.FRONTEND_URL || process.env.API || "http://localhost:5173";
     const verificationUrl = `${clientUrl}/verify-email?token=${rawToken}&id=${user._id}`;
 
-    await sendVerificationMail({
-        to: user.email,
-        username: user.username,
-        verificationUrl,
-    });
+    let mailSent = false;
+    try {
+        await sendVerificationMail({
+            to: user.email,
+            username: user.username,
+            verificationUrl,
+        });
+        mailSent = true;
+    } catch (error) {
+        console.error("Verification email send failed:", error?.message || error);
+    }
 
     return res.status(201).json(
         new ApiResponse(
             201,
             {
                 email: user.email,
-                verificationUrl: hasSmtpConfig ? undefined : verificationUrl,
+                verificationUrl: mailSent && hasSmtpConfig ? undefined : verificationUrl,
             },
-            "Registration successful. Please verify your email to activate your account"
+            mailSent
+                ? "Registration successful. Please verify your email to activate your account"
+                : "Registration successful, but email could not be sent. Use the verification link shown below."
         )
     );
 });
