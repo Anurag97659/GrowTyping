@@ -98,7 +98,7 @@ const registeruser = asyncHandler(async (req, res) => {
                         : mailError?.message,
             },
             mailSent
-                ? "Registration successful. Please verify your email to activate your account"
+                ? "Registration successful. Please verify your email to activate your account, and check your spam folder if you don't see the email."
                 : "Registration successful, but email could not be sent. Use the verification link shown below."
         )
     );
