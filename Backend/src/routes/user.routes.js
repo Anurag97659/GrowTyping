@@ -18,6 +18,7 @@ import {
   getFollowing,
   getUserPublicProfile,
   searchUsers,
+  removeFollower,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -34,6 +35,7 @@ router.route('/getuserprofile').get(verifyJWT, getUserProfile);
 router.route('/updatetheme').post(verifyJWT, updateTheme);
 router.route('/follow').post(verifyJWT, followUser);
 router.route('/unfollow').post(verifyJWT, unfollowUser);
+router.route('/remove-follower').post(verifyJWT, removeFollower);
 router.route('/followers').get(verifyJWT, getFollowers);
 router.route('/following').get(verifyJWT, getFollowing);
 router.route('/search').get(searchUsers);

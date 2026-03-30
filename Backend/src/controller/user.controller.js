@@ -472,9 +472,34 @@ const searchUsers=asyncHandler(async(req,res)=>{
         );
 });
 
+const removeFollower=asyncHandler(async(req,res)=>{
+    const {userIdToRemove}=req.body;
+    if(!userIdToRemove){
+        throw new ApiError(400,"User ID is required");
+   }
+
+    const followerToRemove=await User.findById(userIdToRemove);
+    if(!followerToRemove){
+        throw new ApiError(404,"User not found");
+   }
+
+    const currentUser=await User.findById(req.user?._id);
+    currentUser.followers=currentUser.followers.filter(id => id.toString() !== userIdToRemove);
+    await currentUser.save();
+
+    followerToRemove.following=followerToRemove.following.filter(id => id.toString() !== req.user?._id.toString());
+    await followerToRemove.save();
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,{},"Follower removed successfully")
+        );
+});
+
 
 export {registeruser, refreshAccessToken,
      loginuser, logoutuser, changeCurrentPassword, 
     deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme, 
-    followUser, unfollowUser, getFollowers, getFollowing, getUserPublicProfile, searchUsers
+    followUser, unfollowUser, getFollowers, getFollowing, getUserPublicProfile, searchUsers, removeFollower
     };

@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [viewingUserStats, setViewingUserStats] = useState(null);
   const [viewingUserBestRecords, setViewingUserBestRecords] = useState({});
   const [viewingUserStreak, setViewingUserStreak] = useState(0);
+  const [loadingButtons, setLoadingButtons] = useState({});
 
   const api = axios.create({
     baseURL: import.meta.env.VITE_REACT_APP_API,
@@ -197,22 +198,28 @@ const Dashboard = () => {
   };
 
   const handleUnfollow = async (userId) => {
+    setLoadingButtons(prev => ({ ...prev, [`unfollow-${userId}`]: true }));
     try {
       await api.post("GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
       const updatedFollowing = await api.get("GrowTyping/v1/users/following");
       setFollowing(updatedFollowing.data.data || []);
     } catch (err) {
       console.error("Error unfollowing user:", err);
+    } finally {
+      setLoadingButtons(prev => ({ ...prev, [`unfollow-${userId}`]: false }));
     }
   };
 
   const handleRemoveFollower = async (userId) => {
+    setLoadingButtons(prev => ({ ...prev, [`remove-${userId}`]: true }));
     try {
-      await api.post("GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
+      await api.post("GrowTyping/v1/users/remove-follower", { userIdToRemove: userId });
       const updatedFollowers = await api.get("GrowTyping/v1/users/followers");
       setFollowers(updatedFollowers.data.data || []);
     } catch (err) {
       console.error("Error removing follower:", err);
+    } finally {
+      setLoadingButtons(prev => ({ ...prev, [`remove-${userId}`]: false }));
     }
   };
 
@@ -645,9 +652,17 @@ const Dashboard = () => {
                       </button>
                       <button
                         onClick={() => handleRemoveFollower(follower._id)}
-                        className="ml-2 px-2 py-1 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 hover:border-red-500/40 rounded transition-all"
+                        disabled={loadingButtons[`remove-${follower._id}`]}
+                        className="ml-2 px-2 py-1 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 hover:border-red-500/40 rounded transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
                       >
-                        Remove
+                        {loadingButtons[`remove-${follower._id}`] ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-red-500/30 border-t-red-400 rounded-full animate-spin"></div>
+                            <span>Removing...</span>
+                          </>
+                        ) : (
+                          "Remove"
+                        )}
                       </button>
                     </div>
                   ))}
@@ -688,9 +703,17 @@ const Dashboard = () => {
                       </button>
                       <button
                         onClick={() => handleUnfollow(followingUser._id)}
-                        className="ml-2 px-2 py-1 text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/20 hover:border-rose-500/40 rounded transition-all"
+                        disabled={loadingButtons[`unfollow-${followingUser._id}`]}
+                        className="ml-2 px-2 py-1 text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/20 hover:border-rose-500/40 rounded transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
                       >
-                        Unfollow
+                        {loadingButtons[`unfollow-${followingUser._id}`] ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-rose-500/30 border-t-rose-400 rounded-full animate-spin"></div>
+                            <span>Unfollowing...</span>
+                          </>
+                        ) : (
+                          "Unfollow"
+                        )}
                       </button>
                     </div>
                   ))}
