@@ -4,6 +4,7 @@ import { FiEdit, FiKey, FiTrash2, FiLogOut } from "react-icons/fi";
 
 const Profile = () => {
     const [profile, setProfile] = useState({
+        _id: "",
         username: "",
         fullname: "",
         email: "",
@@ -24,6 +25,7 @@ const Profile = () => {
                 const res = await api.get("GrowTyping/v1/users/getuserprofile");
                 const data = res.data.data;
                 setProfile({
+                    _id: data._id || "",
                     username: data.username || "",
                     fullname: data.fullname || "",
                     email: data.email || "",
@@ -130,6 +132,7 @@ const Profile = () => {
                     </div>
                     <div className="divide-y divide-white/[0.04]">
                         {[
+                            { label: "User ID", value: profile._id },
                             { label: "Username", value: profile.username },
                             { label: "Full Name", value: profile.fullname },
                             { label: "Email", value: profile.email},

@@ -277,6 +277,118 @@ const getAverageAccuracyByType = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, stats, "Average accuracy by test type fetched"));
 });
 
+const getUserPublicStats = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+
+    const stats = await TypingStat.aggregate([
+        { $match: { user: userIdObj } },
+        {
+            $group: {
+                _id: null,
+                totalSessions: { $sum: 1 },
+                totalTime: { $sum: "$duration" },
+                avgWpm: { $avg: "$wpm" },
+                avgAccuracy: { $avg: "$accuracy" }
+            }
+        }
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            stats[0] || {
+                totalSessions: 0,
+                totalTime: 0,
+                avgWpm: 0,
+                avgAccuracy: 0
+            },
+            "User public stats fetched successfully"
+        )
+    );
+});
+
+const getUserBestRecords = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+
+    const allStats = await TypingStat.find({ user: userIdObj }).sort({ createdAt: -1 });
+
+    const bestRecordByType = {};
+    allStats.forEach((stat) => {
+        if (!bestRecordByType[stat.testType]) {
+            bestRecordByType[stat.testType] = {
+                highestWpm: stat.wpm,
+                highestAccuracy: stat.accuracy,
+                longestDuration: stat.duration
+            };
+        } else {
+            bestRecordByType[stat.testType].highestWpm = Math.max(
+                bestRecordByType[stat.testType].highestWpm,
+                stat.wpm
+            );
+            bestRecordByType[stat.testType].highestAccuracy = Math.max(
+                bestRecordByType[stat.testType].highestAccuracy,
+                stat.accuracy
+            );
+            bestRecordByType[stat.testType].longestDuration = Math.max(
+                bestRecordByType[stat.testType].longestDuration,
+                stat.duration
+            );
+        }
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, bestRecordByType, "User best records fetched successfully")
+    );
+});
+
+const getUserTypingStreak = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+
+    const stats = await TypingStat.find({ user: userIdObj })
+        .sort({ testDate: -1 })
+        .select("testDate");
+
+    if (stats.length === 0) {
+        return res.status(200).json(new ApiResponse(200, { streak: 0 }, "User streak fetched"));
+    }
+
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    for (const stat of stats) {
+        const statDate = new Date(stat.testDate);
+        statDate.setHours(0, 0, 0, 0);
+
+        if (currentDate.getTime() === statDate.getTime()) {
+            streak++;
+            currentDate.setDate(currentDate.getDate() - 1);
+        } else if (currentDate.getTime() > statDate.getTime()) {
+            break;
+        }
+    }
+
+    return res.status(200).json(new ApiResponse(200, { streak }, "User streak fetched"));
+});
+
      
 export{
     saveTypingStat,
@@ -286,5 +398,8 @@ export{
     getTopWeakKeys,
     getTypingStreak,
     getTypingHistory,
-    getAverageAccuracyByType
+    getAverageAccuracyByType,
+    getUserPublicStats,
+    getUserBestRecords,
+    getUserTypingStreak
 };

@@ -16,6 +16,16 @@ const Dashboard = () => {
   const [allTimeBestByType, setAllTimeBestByType] = useState({});
   const [username, setUsername] = useState("User");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [viewingUserProfile, setViewingUserProfile] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [viewingUserStats, setViewingUserStats] = useState(null);
+  const [viewingUserBestRecords, setViewingUserBestRecords] = useState({});
+  const [viewingUserStreak, setViewingUserStreak] = useState(0);
 
   const api = axios.create({
     baseURL: import.meta.env.VITE_REACT_APP_API,
@@ -93,6 +103,22 @@ const Dashboard = () => {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const fetchFollowersAndFollowing = async () => {
+      try {
+        const followersData = await api.get("GrowTyping/v1/users/followers");
+        setFollowers(followersData.data.data || []);
+        const followingData = await api.get("GrowTyping/v1/users/following");
+        setFollowing(followingData.data.data || []);
+      } catch (err) {
+        console.error("Error fetching followers/following:", err);
+      }
+    };
+    if (isLoggedIn) {
+      fetchFollowersAndFollowing();
+    }
+  }, [isLoggedIn]);
+
   const handleLogout = async () => {
     try {
       await api.post("GrowTyping/v1/users/logout");
@@ -100,6 +126,119 @@ const Dashboard = () => {
       window.location.href = "/typing";
     } catch (err) {
       console.error("Logout failed", err);
+    }
+  };
+
+  const viewUserProfile = async (username) => {
+    try {
+      const response = await api.get(`GrowTyping/v1/users/public-profile/${username}`);
+      setViewingUserProfile(response.data.data);
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  };
+
+  const handleSearch = async (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const response = await api.get(`GrowTyping/v1/users/search?query=${query}`);
+      setSearchResults(response.data.data || []);
+      setShowSearchResults(true);
+    } catch (err) {
+      console.error("Error searching users:", err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const isUserFollowing = (userId) => {
+    return following.some(f => f._id === userId);
+  };
+
+  const handleFollowFromSearch = async (userId) => {
+    const isFollowing = isUserFollowing(userId);
+    if (isFollowing) {
+      try {
+        await api.post("GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
+        const updatedFollowing = await api.get("GrowTyping/v1/users/following");
+        setFollowing(updatedFollowing.data.data || []);
+        const response = await api.get(`GrowTyping/v1/users/search?query=${searchQuery}`);
+        setSearchResults(response.data.data || []);
+      } catch (err) {
+        console.error("Error unfollowing user:", err);
+      }
+    } else {
+      try {
+        await api.post("GrowTyping/v1/users/follow", { userIdToFollow: userId });
+        const updatedFollowing = await api.get("GrowTyping/v1/users/following");
+        setFollowing(updatedFollowing.data.data || []);
+        const response = await api.get(`GrowTyping/v1/users/search?query=${searchQuery}`);
+        setSearchResults(response.data.data || []);
+      } catch (err) {
+        const errorMsg = err.response?.data?.message || "";
+        if (errorMsg.includes("cannot") || errorMsg.includes("yourself")) {
+          alert("You can't follow yourself!");
+        } else {
+          alert("Error following user. Please try again.");
+        }
+        console.error("Error following user:", err);
+      }
+    }
+  };
+
+  const handleUnfollow = async (userId) => {
+    try {
+      await api.post("GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
+      const updatedFollowing = await api.get("GrowTyping/v1/users/following");
+      setFollowing(updatedFollowing.data.data || []);
+    } catch (err) {
+      console.error("Error unfollowing user:", err);
+    }
+  };
+
+  const handleRemoveFollower = async (userId) => {
+    try {
+      await api.post("GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
+      const updatedFollowers = await api.get("GrowTyping/v1/users/followers");
+      setFollowers(updatedFollowers.data.data || []);
+    } catch (err) {
+      console.error("Error removing follower:", err);
+    }
+  };
+
+  const fetchUserStats = async (username) => {
+    try {
+      const userResponse = await api.get(`GrowTyping/v1/users/public-profile/${username}`);
+      const user = userResponse.data.data;
+      setViewingUserStats(user);
+
+      const statsResponse = await api.get(`GrowTyping/v1/stats/public/${user._id}`);
+      const userStats = statsResponse.data.data;
+
+      const bestRecordsResponse = await api.get(`GrowTyping/v1/stats/public-best/${user._id}`);
+      const bestRecords = bestRecordsResponse.data.data;
+      setViewingUserBestRecords(bestRecords || {});
+
+      const streakResponse = await api.get(`GrowTyping/v1/stats/public-streak/${user._id}`);
+      const streak = streakResponse.data.data.streak || 0;
+      setViewingUserStreak(streak);
+      setViewingUserStats({
+        ...user,
+        ...userStats
+      });
+    } catch (err) {
+      console.error("Error fetching user stats:", err);
+      setViewingUserStats(null);
     }
   };
 
@@ -155,6 +294,46 @@ const Dashboard = () => {
               <option value="thisYear" className="bg-[#1a1a2e]">This Year</option>
               <option value="previousYears" className="bg-[#1a1a2e]">Previous Years</option>
             </select>
+          </div>
+
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search users by ID"
+              value={searchQuery}
+              onChange={handleSearch}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/40 focus:bg-white/10 transition-all w-56"
+            />
+            {searchLoading && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></div>
+              </div>
+            )}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
+                {searchResults.map((user) => {
+                  const isFollowing = isUserFollowing(user._id);
+                  return (
+                    <div key={user._id} className="flex items-center justify-between px-4 py-3 border-b border-white/5 hover:bg-white/5 group">
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-violet-400">@{user.username}</div>
+                        <div className="text-xs text-gray-600">{user.fullname}</div>
+                      </div>
+                      <button
+                        onClick={() => handleFollowFromSearch(user._id)}
+                        className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                          isFollowing
+                            ? "bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 hover:text-rose-300 border-rose-500/30 hover:border-rose-500/60"
+                            : "bg-violet-600/20 hover:bg-violet-600/40 text-violet-400 hover:text-violet-300 border-violet-500/30 hover:border-violet-500/60"
+                        }`}
+                      >
+                        {isFollowing ? "Unfollow" : "Follow"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/30 rounded-xl px-4 py-2">
@@ -432,7 +611,172 @@ const Dashboard = () => {
           </div>
         </div>
 
-        
+       
+        <div className="grid grid-cols-2 gap-6 mb-10">
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500/20 transition-all">
+            <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+                <h2 className="text-lg font-bold text-white">Followers</h2>
+              </div>
+              <span className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                {followers.length}
+              </span>
+            </div>
+            <div className="p-6">
+              {followers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-3xl mb-2">👥</div>
+                  <div className="text-sm">No followers yet</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {followers.map((follower) => (
+                    <div
+                      key={follower._id}
+                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-blue-500/20 hover:border-blue-500/40 transition-all flex items-center justify-between group"
+                    >
+                      <button
+                        onClick={() => fetchUserStats(follower.username)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="text-sm font-semibold text-blue-400 group-hover:text-blue-300">@{follower.username}</div>
+                        <div className="text-xs text-gray-500">{follower.fullname}</div>
+                      </button>
+                      <button
+                        onClick={() => handleRemoveFollower(follower._id)}
+                        className="ml-2 px-2 py-1 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 hover:border-red-500/40 rounded transition-all"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden hover:border-emerald-500/20 transition-all">
+            <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>
+                <h2 className="text-lg font-bold text-white">Following</h2>
+              </div>
+              <span className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                {following.length}
+              </span>
+            </div>
+            <div className="p-6">
+              {following.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-3xl mb-2">🔗</div>
+                  <div className="text-sm">Not following anyone yet</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {following.map((followingUser) => (
+                    <div
+                      key={followingUser._id}
+                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all flex items-center justify-between group"
+                    >
+                      <button
+                        onClick={() => fetchUserStats(followingUser.username)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="text-sm font-semibold text-emerald-400 group-hover:text-emerald-300">@{followingUser.username}</div>
+                        <div className="text-xs text-gray-500">{followingUser.fullname}</div>
+                      </button>
+                      <button
+                        onClick={() => handleUnfollow(followingUser._id)}
+                        className="ml-2 px-2 py-1 text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/20 hover:border-rose-500/40 rounded transition-all"
+                      >
+                        Unfollow
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {viewingUserStats && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 max-h-screen overflow-y-auto">
+            <div className="bg-[#1a1a2e] border border-white/10 rounded-3xl max-w-4xl w-full shadow-2xl my-8">
+              <div className="sticky top-0 px-8 py-6 border-b border-white/10 bg-gradient-to-r from-blue-600/20 to-purple-600/20 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">@{viewingUserStats.username}</h2>
+                  <p className="text-sm text-gray-400 mt-1">{viewingUserStats.fullname}</p>
+                </div>
+                <button
+                  onClick={() => setViewingUserStats(null)}
+                  className="text-gray-400 hover:text-white text-2xl font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-violet-400">{viewingUserStats.totalSessions || 0}</div>
+                    <div className="text-sm text-gray-500 mt-1">Total Sessions</div>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-cyan-400">{Math.round(viewingUserStats.totalTime || 0)}</div>
+                    <div className="text-sm text-gray-500 mt-1">Total Time (s)</div>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-emerald-400">{Math.round(viewingUserStats.avgWpm || 0)}</div>
+                    <div className="text-sm text-gray-500 mt-1">Average WPM</div>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-orange-400">{viewingUserStreak} days</div>
+                    <div className="text-sm text-gray-500 mt-1">Typing Streak</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Followers</div>
+                    <div className="text-white text-lg font-bold">{viewingUserStats.followers?.length || 0}</div>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Following</div>
+                    <div className="text-white text-lg font-bold">{viewingUserStats.following?.length || 0}</div>
+                  </div>
+                </div>
+
+                {Object.keys(viewingUserBestRecords).length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-4">All-Time Best Records</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(viewingUserBestRecords).map(([testType, records]) => (
+                        <div key={testType} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                          <div className="text-sm font-semibold text-violet-400 capitalize mb-3">{testType}</div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-400">Best WPM</span>
+                              <span className="text-sm font-bold text-emerald-400">{Math.round(records.highestWpm || 0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-400">Best Accuracy</span>
+                              <span className="text-sm font-bold text-cyan-400">{Math.round(records.highestAccuracy || 0)}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-400">Longest Duration</span>
+                              <span className="text-sm font-bold text-orange-400">{Math.round(records.longestDuration || 0)}s</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all">
           <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">

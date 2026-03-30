@@ -61,7 +61,15 @@ const userSchema=new Schema({
         type: String,
         default: "cyberpunk",
         trim: true,
-    }
+    },
+    followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    following: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 },{timestamps:true});
 
 userSchema.pre("save", async function () {

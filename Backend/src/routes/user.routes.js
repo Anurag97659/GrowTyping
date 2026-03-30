@@ -12,6 +12,12 @@ import {
   getUserProfile,
   verifyEmail,
   updateTheme,
+  followUser,
+  unfollowUser,
+  getFollowers,
+  getFollowing,
+  getUserPublicProfile,
+  searchUsers,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -26,6 +32,12 @@ router.route('/getusername').get(verifyJWT, getUsername);
 router.route('/updatedetails').post(verifyJWT, updateDetails);
 router.route('/getuserprofile').get(verifyJWT, getUserProfile);
 router.route('/updatetheme').post(verifyJWT, updateTheme);
+router.route('/follow').post(verifyJWT, followUser);
+router.route('/unfollow').post(verifyJWT, unfollowUser);
+router.route('/followers').get(verifyJWT, getFollowers);
+router.route('/following').get(verifyJWT, getFollowing);
+router.route('/search').get(searchUsers);
+router.route('/public-profile/:username').get(getUserPublicProfile);
 router.get("/me", optionalVerifyJWT, (req, res) => {
   if (!req.user) {
     return res.status(200).json({

@@ -16,14 +16,18 @@ The application emphasizes realistic typing behavior, including penalties for co
 
 ## **Key Features**
 - Multiple typing test durations: 15s, 30s, 60s, and custom.
-- Real English words including articles, pronouns, verbs, nouns, adjectives, adverbs, prepositions, and common phrases.
+- **Top 5 Weak Keys Analysis:** Identify and display the user's most frequently mistyped keys for targeted improvement.
 - Live WPM and accuracy calculation.
 - Backspace functionality only corrects wrong characters and deducts accuracy.
 - Thin, blinking typing cursor for a professional typing experience.
 - Highlighting of correct and incorrect characters during typing.
-- Session handling with user authentication.
+- **Email Verification:** Users must verify their email before accessing the dashboard and typing tests.
 - Save typing statistics including correct characters, incorrect characters, weak keys, WPM, and accuracy.
-- Responsive and visually appealing UI with gradient themes and hover effects.
+- **Theme Persistence:** Save and auto-load user's preferred theme from database (16+ custom themes including cyberpunk, contrast, glass morphism, luxury, and professional designs).
+- **Social Features:** Follow/Unfollow users, manage followers and following lists with action buttons.
+- **Public User Profiles:** View any user's stats, followers, following, and best records without authentication.
+- **User Stats Dashboard:** Comprehensive stats modal showing total sessions, time spent, average WPM, typing streak, and all-time best records per test type.
+
 
 ---
 
@@ -49,14 +53,16 @@ The application emphasizes realistic typing behavior, including penalties for co
 ---
 ## **Preview**
 ### **Dashboard**
- ![GrowTyping](./screenshots/dash3.1.png)
- ![GrowTyping](./screenshots/dash3.2.png)
- ![GrowTyping](./screenshots/dash3.3.png)
+ ![GrowTyping](./screenshots/dash4.1.png)
+ ![GrowTyping](./screenshots/dash4.2.png)
+ ![GrowTyping](./screenshots/dash4.3.png)
+check friend's profile
+ ![GrowTyping](./screenshots/friend_stats.png)
 ### **Typing Test**
  ![GrowTyping](./screenshots/typing5.o.png)
 ### **Profile**
- ![GrowTyping](./screenshots/profile.2.0.png)
- ![GrowTyping](./screenshots/profile.2.1.png)
+ ![GrowTyping](./screenshots/profile3.0.png)
+ ![GrowTyping](./screenshots/profile3.1.png)
 ### **Login and Registration**
  ![GrowTyping](./screenshots/login.png)
  ![GrowTyping](./screenshots/regis.png)
@@ -95,45 +101,81 @@ The frontend is designed with a focus on usability and realistic typing experien
    - Gradient backgrounds, hover effects, and animated stats.
    - Focused on readability and minimal distractions for typing practice.
 
+7. **Dashboard Component**
+   - Displays comprehensive typing statistics with date range filtering.
+   - Shows stats by test type, accuracy analysis, weak keys, and typing streaks.
+   - Displays all-time best records for each test type.
+
+8. **Theme System**
+   - 16+ custom themes stored in database and auto-loaded.
+   - Real-time theme switching with database persistence.
+   - Themes include cyberpunk, contrast modes, glass morphism, luxury, and professional designs.
+   - Themes apply to both typing page and dashboard.
+
+9. **Social Features**
+   - **Search Users:** Real-time search with loading spinner, supports username and user ID search.
+   - **Follow/Unfollow:** Add users to following list with dynamic button states.
+   - **Followers/Following Lists:** Manage followers with "Remove" button and following with "Unfollow" button.
+   - **User Stats Modal:** Click on any user to view their complete stats dashboard including sessions, time, WPM, streak, and all-time best records.
+   - **Self-Follow Prevention:** Alert notification prevents users from following themselves.
+
 ---
 
 ## **Backend Details**
 The backend provides secure and reliable data storage, user management, and typing analytics:
 
-### **Server & Routes**
-- **Server:** Express.js server running on Node.js
-- **Routes:**
-  1. **`/users/getUsername`**
-     - Fetches the current authenticated user's username.
-     - Handles session expiration and redirects unauthorized users to login.
-  2. **`/stats/save`**
-     - Saves typing test results including WPM, accuracy, duration, correct/incorrect characters, and weak keys.
-     - Ensures each test is only saved once per session.
+### **Architecture**
+- **Server:** Express.js REST API running on Node.js
+- **Authentication:** JWT-based authentication with email verification
+- **API Structure:** RESTful endpoints organized by resource (users, stats)
+
+### **Core Functionality**
+- **User Management:** Registration, login, profile management, theme persistence
+- **Social Features:** Follow/Unfollow, user search, public profiles, followers/following management
+- **Stats Tracking:** Save typing results, calculate WPM/accuracy, track weak keys, maintain streaks
+- **Public APIs:** Public endpoints for user stats and profiles without authentication requirement
 
 ### **Database**
-- **MongoDB (Atlas)**
-  - Stores user information and typing statistics.
-  - Provides scalability and reliability for user data storage.
+- **MongoDB (Atlas)** - Scalable NoSQL database for user data and typing statistics
+- **User Collection:** Stores authentication, profile information, theme preference, and social relationships
+- **Stats Collection:** Records typing test results with performance metrics (WPM, accuracy, duration, test type)
+- **Relationships:** MongoDB references for efficient data retrieval between users and statistics
 
-### **Logic**
-- Calculates WPM using: `correct characters / 5 / minutes elapsed`.
-- Accuracy calculated based on total keystrokes and corrected mistakes.
-- Tracks “weak keys” for each user to help identify typing difficulties.
-- Prevents double saving of stats per test.
+### **Key Analytics**
+- WPM calculation based on correct characters typed per minute
+- Accuracy tracking with penalties for corrections
+- Weak key identification to highlight typing difficulties
+- Typing streak maintenance for user engagement
+- Date range filtering for comprehensive statistics analysis
 
 ---
 
 ## **How It Works**
-1. User logs in and accesses the typing test page.
-2. User selects a typing test duration or uses the default/custom test.
-3. Random English text is generated from the word bank.
-4. User begins typing:
-   - Correct characters are highlighted in green.
-   - Incorrect characters are highlighted in red.
-   - Backspacing only removes incorrect characters and deducts accuracy.
-5. The timer counts down, and stats are updated live.
-6. At the end of the test, results are automatically saved to the backend.
-7. Users can review their WPM, accuracy, and weak keys for improvement.
+1. User logs in and accesses the dashboard or typing test page.
+2. User's theme preference is auto-loaded from database.
+3. On dashboard, user can:
+   - View comprehensive typing statistics with date range filtering.
+   - Search for other users by username or ID with real-time results.
+   - View followers and following lists with action buttons.
+   - Click on any user to view their complete stats dashboard.
+   - Follow/Unfollow users (with self-follow prevention).
+   - Remove followers from their followers list.
+   - Change their theme preference (saved to database).
+
+4. For typing tests:
+   - User selects a typing test duration or uses the default/custom test.
+   - Random English text is generated from the word bank.
+   - User begins typing:
+     - Correct characters are highlighted in green.
+     - Incorrect characters are highlighted in red.
+     - Backspacing only removes incorrect characters and deducts accuracy.
+   - The timer counts down, and stats are updated live.
+   - At the end of the test, results are automatically saved to the backend.
+   - Users can review their WPM, accuracy, and weak keys for improvement.
+
+5. Public profile viewing:
+   - Any user can view another user's public profile without authentication.
+   - Profile displays user's stats, followers/following counts, and all-time best records for each test type.
 
 
 

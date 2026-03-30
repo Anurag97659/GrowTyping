@@ -8,7 +8,10 @@ import {
     getTopWeakKeys,
     getTypingStreak,
     getTypingHistory,
-    getAverageAccuracyByType
+    getAverageAccuracyByType,
+    getUserPublicStats,
+    getUserBestRecords,
+    getUserTypingStreak
 } from "../controller/stats.controller.js";
 
 const router = Router();
@@ -22,5 +25,9 @@ router.route("/weak-keys").get(verifyJWT, getTopWeakKeys);
 router.route("/streak").get(verifyJWT, getTypingStreak);
 router.route("/history").get(verifyJWT, getTypingHistory);
 router.route("/average-accuracy").get(verifyJWT, getAverageAccuracyByType);
+
+router.route("/public/:userId").get(getUserPublicStats);
+router.route("/public-best/:userId").get(getUserBestRecords);
+router.route("/public-streak/:userId").get(getUserTypingStreak);
 
 export default router;

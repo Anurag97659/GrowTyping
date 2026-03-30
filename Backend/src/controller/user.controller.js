@@ -344,8 +344,137 @@ const updateTheme=asyncHandler(async(req,res)=>{
         );
 });
 
+const followUser=asyncHandler(async(req,res)=>{
+    const {userIdToFollow}=req.body;
+    if(!userIdToFollow){
+        throw new ApiError(400,"User ID is required");
+   }
+    
+    if(userIdToFollow === req.user?._id.toString()){
+        throw new ApiError(400,"You cannot follow yourself");
+   }
+
+    const userToFollow=await User.findById(userIdToFollow);
+    if(!userToFollow){
+        throw new ApiError(404,"User not found");
+   }
+
+    const currentUser=await User.findById(req.user?._id);
+    if(!currentUser.following.includes(userIdToFollow)){
+        currentUser.following.push(userIdToFollow);
+        await currentUser.save();
+   }
+
+    if(!userToFollow.followers.includes(req.user?._id)){
+        userToFollow.followers.push(req.user?._id);
+        await userToFollow.save();
+   }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,{},"User followed successfully")
+        );
+});
+
+const unfollowUser=asyncHandler(async(req,res)=>{
+    const {userIdToUnfollow}=req.body;
+    if(!userIdToUnfollow){
+        throw new ApiError(400,"User ID is required");
+   }
+
+    const userToUnfollow=await User.findById(userIdToUnfollow);
+    if(!userToUnfollow){
+        throw new ApiError(404,"User not found");
+   }
+
+    const currentUser=await User.findById(req.user?._id);
+    currentUser.following=currentUser.following.filter(id => id.toString() !== userIdToUnfollow);
+    await currentUser.save();
+
+    userToUnfollow.followers=userToUnfollow.followers.filter(id => id.toString() !== req.user?._id.toString());
+    await userToUnfollow.save();
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,{},"User unfollowed successfully")
+        );
+});
+
+const getFollowers=asyncHandler(async(req,res)=>{
+    const user=await User.findById(req.user?._id).populate('followers', 'username fullname').select('followers');
+    if(!user){
+        throw new ApiError(404,"User not found");
+   }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,user.followers,"Followers fetched successfully")
+        );
+});
+
+const getFollowing=asyncHandler(async(req,res)=>{
+    const user=await User.findById(req.user?._id).populate('following', 'username fullname').select('following');
+    if(!user){
+        throw new ApiError(404,"User not found");
+   }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,user.following,"Following fetched successfully")
+        );
+});
+
+const getUserPublicProfile=asyncHandler(async(req,res)=>{
+    const {username}=req.params;
+    if(!username || !username.trim()){
+        throw new ApiError(400,"Username is required");
+   }
+
+    const user=await User.findOne({username: username.toLowerCase().trim()})
+        .select("-password -refreshToken -emailVerificationToken -emailVerificationTokenExpiry")
+        .populate('followers', 'username fullname')
+        .populate('following', 'username fullname');
+        
+    if(!user){
+        throw new ApiError(404,"User not found");
+   }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,user,"User profile fetched successfully")
+        );
+});
+
+
+const searchUsers=asyncHandler(async(req,res)=>{
+    const {query}=req.query;
+    if(!query || !query.trim()){
+        throw new ApiError(400,"Search query is required");
+   }
+
+    const searchQuery = query.trim();
+    const users=await User.find({
+        $or: [
+            {username: {$regex: searchQuery, $options: 'i'}},
+            {_id: searchQuery}
+        ]
+   })
+        .select('_id username fullname')
+        .limit(5);
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,users,"Users found successfully")
+        );
+});
+
 
 export {registeruser, refreshAccessToken,
      loginuser, logoutuser, changeCurrentPassword, 
-    deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme
+    deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme, 
+    followUser, unfollowUser, getFollowers, getFollowing, getUserPublicProfile, searchUsers
     };
