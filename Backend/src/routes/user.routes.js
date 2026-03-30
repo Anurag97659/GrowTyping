@@ -11,6 +11,7 @@ import {
   updateDetails,
   getUserProfile,
   verifyEmail,
+  updateTheme,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -24,6 +25,7 @@ router.route('/deleteuser').post(verifyJWT, deleteUser);
 router.route('/getusername').get(verifyJWT, getUsername);
 router.route('/updatedetails').post(verifyJWT, updateDetails);
 router.route('/getuserprofile').get(verifyJWT, getUserProfile);
+router.route('/updatetheme').post(verifyJWT, updateTheme);
 router.get("/me", optionalVerifyJWT, (req, res) => {
   if (!req.user) {
     return res.status(200).json({

@@ -413,17 +413,44 @@ export default function TypingPage() {
 
   const [username, setUsername] = useState("Guest");
   const [loggedIn, setLoggedIn] = useState(false);
+  const [theme, setTheme] = useState("cyberpunk");
+  const [themeLoaded, setThemeLoaded] = useState(false);
+
   useEffect(() => {
-    api
-      .get("/GrowTyping/v1/users/me")
-      .then((res) => {
-        if (res.data.loggedIn) {
-          setUsername(res.data.user.username.toUpperCase());
+    const checkLoginAndLoadTheme = async () => {
+      try {
+        const meRes = await api.get("/GrowTyping/v1/users/me");
+        if (meRes.data.loggedIn) {
+          setUsername(meRes.data.user.username.toUpperCase());
           setLoggedIn(true);
+          try {
+            const profileRes = await api.get("/GrowTyping/v1/users/getuserprofile");
+            if (profileRes.data.data.theme) {
+              setTheme(profileRes.data.data.theme);
+            }
+          } catch (err) {
+            console.error("Failed to load theme:", err);
+          }
         }
-      })
-      .catch(() => {});
+      } catch(err){}
+      setThemeLoaded(true);
+    };
+    
+    checkLoginAndLoadTheme();
   }, []);
+
+  useEffect(() => {
+    if (themeLoaded && loggedIn && theme) {
+      const saveTheme = async () => {
+        try {
+          await api.post("/GrowTyping/v1/users/updatetheme", { theme });
+        } catch (err) {
+          console.error("Failed to save theme:", err);
+        }
+      };
+      saveTheme();
+    }
+  }, [theme, loggedIn, themeLoaded]);
 
   const [testType, setTestType] = useState("30s");
   const durationMap = { "15s": 15, "30s": 30, "60s": 60, custom: 0 };
@@ -586,8 +613,6 @@ export default function TypingPage() {
         100
       ).toFixed(1)
     : 100;
-
-  const [theme, setTheme] = useState("cyberpunk");
 
   const themes = {
     // High-end industry themes - Updated for high card contrast and readable dropdown text
@@ -782,6 +807,88 @@ export default function TypingPage() {
       card: "bg-slate-800/80 border-emerald-600/40 backdrop-blur-sm shadow-lg",
       button:
         "bg-emerald-600/90 hover:bg-emerald-500 text-white border-emerald-500 shadow-md hover:shadow-emerald-500/50",
+    },
+
+    // High Contrast Themes for Professionals
+
+    // Black & White Contrast - Maximum accessibility and readability
+    "contrastBw": {
+      bg: "from-black via-slate-950 to-black",
+      text: "text-white",
+      primary: "white",
+      card: "bg-black border-white/80 backdrop-blur-md shadow-2xl ring-2 ring-white/60",
+      button:
+        "bg-white/95 hover:bg-white text-black border-white shadow-xl hover:shadow-white/60 font-bold",
+    },
+
+    // Navy & Gold Contrast - Executive professional with high visibility
+    "contrastNG": {
+      bg: "from-slate-950 via-blue-950 to-slate-950",
+      text: "text-white",
+      primary: "yellow",
+      card: "bg-slate-800/95 border-yellow-300/80 backdrop-blur-md shadow-2xl ring-2 ring-yellow-400/50",
+      button:
+        "bg-gradient-to-r from-yellow-400 to-amber-300 text-slate-950 border-yellow-300 shadow-xl hover:shadow-yellow-400/60 font-bold",
+    },
+
+    // Dark & Lime Contrast - Modern tech professional
+    "contrastLime": {
+      bg: "from-slate-950 via-gray-950 to-slate-950",
+      text: "text-lime-50",
+      primary: "lime",
+      card: "bg-slate-800/95 border-lime-400/80 backdrop-blur-md shadow-2xl ring-2 ring-lime-500/50",
+      button:
+        "bg-gradient-to-r from-lime-400 to-green-400 text-slate-950 border-lime-400 shadow-xl hover:shadow-lime-400/70 font-bold",
+    },
+
+    // Charcoal & Cyan Contrast - Professional tech aesthetic
+    "contrastCyan": {
+      bg: "from-gray-950 via-slate-950 to-gray-950",
+      text: "text-cyan-100",
+      primary: "cyan",
+      card: "bg-slate-800/95 border-cyan-300/80 backdrop-blur-md shadow-2xl ring-2 ring-cyan-400/50",
+      button:
+        "bg-gradient-to-r from-cyan-400 to-sky-400 text-slate-950 border-cyan-400 shadow-xl hover:shadow-cyan-400/70 font-bold",
+    },
+
+    // Deep Purple & White Contrast - Clean business professional
+    "contrastPurple": {
+      bg: "from-slate-950 via-purple-950 to-slate-950",
+      text: "text-white",
+      primary: "purple",
+      card: "bg-slate-800/95 border-purple-400/80 backdrop-blur-md shadow-2xl ring-2 ring-purple-500/60",
+      button:
+        "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white border-purple-400 shadow-xl hover:shadow-purple-500/70 font-bold",
+    },
+
+    // Charcoal & Orange Contrast - Energetic professional
+    "contrastOrange": {
+      bg: "from-slate-950 via-gray-950 to-slate-950",
+      text: "text-orange-50",
+      primary: "orange",
+      card: "bg-slate-800/95 border-orange-400/80 backdrop-blur-md shadow-2xl ring-2 ring-orange-500/50",
+      button:
+        "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400 shadow-xl hover:shadow-orange-500/70 font-bold",
+    },
+
+    // Deep Blue & White Contrast - Corporate professional
+    "contrastBlue": {
+      bg: "from-slate-950 via-blue-950 to-slate-950",
+      text: "text-white",
+      primary: "blue",
+      card: "bg-slate-800/95 border-blue-400/80 backdrop-blur-md shadow-2xl ring-2 ring-blue-500/60",
+      button:
+        "bg-gradient-to-r from-blue-500 to-sky-500 text-white border-blue-400 shadow-xl hover:shadow-blue-500/70 font-bold",
+    },
+
+    // Charcoal & Red Contrast - Attention-grabbing professional
+    "contrastRed": {
+      bg: "from-slate-950 via-gray-950 to-slate-950",
+      text: "text-red-50",
+      primary: "red",
+      card: "bg-slate-800/95 border-red-400/80 backdrop-blur-md shadow-2xl ring-2 ring-red-500/50",
+      button:
+        "bg-gradient-to-r from-red-500 to-rose-500 text-white border-red-400 shadow-xl hover:shadow-red-500/70 font-bold",
     },
   };
 

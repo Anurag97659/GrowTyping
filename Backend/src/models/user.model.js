@@ -56,6 +56,11 @@ const userSchema=new Schema({
     },
     emailVerificationTokenExpiry: {
         type: Date,
+    },
+    theme: {
+        type: String,
+        default: "cyberpunk",
+        trim: true,
     }
 },{timestamps:true});
 

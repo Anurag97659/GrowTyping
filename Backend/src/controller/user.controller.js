@@ -323,8 +323,29 @@ const getUserProfile=asyncHandler(async(req,res)=>{
         );
 });
 
+const updateTheme=asyncHandler(async(req,res)=>{
+    const {theme}=req.body;
+    if(!theme || !theme.trim()){
+        throw new ApiError(400,"Theme is required");
+   }
+    const user=await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set:{
+                theme: theme.trim()
+           }
+       },
+        {new:true}
+    ).select("-password -refreshToken");
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,user,"Theme updated successfully")
+        );
+});
+
 
 export {registeruser, refreshAccessToken,
      loginuser, logoutuser, changeCurrentPassword, 
-    deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail
+    deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme
     };
