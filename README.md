@@ -64,7 +64,7 @@ check friend's profile
  ![GrowTyping](./screenshots/profile3.0.png)
  ![GrowTyping](./screenshots/profile3.1.png)
 ### **Login and Registration**
- ![GrowTyping](./screenshots/login.png)
+ ![GrowTyping](./screenshots/login2.0.png)
  ![GrowTyping](./screenshots/regis.png)
 
 
