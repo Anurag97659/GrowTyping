@@ -4,7 +4,7 @@ import {User} from '../models/user.model.js';
 import jwt from "jsonwebtoken";
 import {ApiResponse} from '../utils/ApiResponse.js';
 import crypto from "crypto";
-import { sendVerificationMail, hasSmtpConfig } from "../utils/mail.service.js";
+import { sendVerificationMail, sendPasswordResetMail, hasSmtpConfig } from "../utils/mail.service.js";
 
 const cookieOptions = {
   httpOnly: true,
@@ -497,9 +497,61 @@ const removeFollower=asyncHandler(async(req,res)=>{
         );
 });
 
+const forgotPassword = asyncHandler(async(req, res) => {
+    const { email, username } = req.body;
+
+    if (!email && !username) {
+        throw new ApiError(400, "Email or username is required");
+    }
+    const user = await User.findOne({
+        $or: [{ email: email?.toLowerCase().trim() }, { username: username?.toLowerCase().trim() }]
+    });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const temporaryPassword = crypto.randomBytes(8).toString('hex');
+    user.password = temporaryPassword;
+    await user.save({ validateBeforeSave: false });
+    let mailSent = false;
+    let mailError = null;
+    
+    try {
+        await sendPasswordResetMail({
+            to: user.email,
+            username: user.username,
+            newPassword: temporaryPassword,
+        });
+        mailSent = true;
+    } catch (error) {
+        mailError = error;
+        console.error("Password reset email send failed", {
+            message: error?.message,
+            code: error?.code,
+            command: error?.command,
+            responseCode: error?.responseCode,
+            response: error?.response,
+        });
+    }
+
+    if (!mailSent && process.env.NODE_ENV === "production") {
+        throw new ApiError(502, "Could not send password reset email. Please try again in a minute.");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { email: user.email },
+            mailSent
+                ? "Password reset successfully. A new temporary password has been sent to your email. Please check your email and spam folder."
+                : "Password reset successful, but email could not be sent due to email service unavailability. Your temporary password has been generated."
+        )
+    );
+});
 
 export {registeruser, refreshAccessToken,
      loginuser, logoutuser, changeCurrentPassword, 
     deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme, 
-    followUser, unfollowUser, getFollowers, getFollowing, getUserPublicProfile, searchUsers, removeFollower
+    followUser, unfollowUser, getFollowers, getFollowing, getUserPublicProfile, searchUsers, removeFollower, forgotPassword
     };
