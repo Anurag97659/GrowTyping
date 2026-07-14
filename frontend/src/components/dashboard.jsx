@@ -901,9 +901,12 @@ const Dashboard = () => {
                   </svg>
                 )}
                 {dailyProgress.length > 0 && (
-                  <p className="mt-2 text-right text-xs text-gray-500">
-                    Latest: <span className="font-semibold" style={{ color: chart.color }}>{values.at(-1).toFixed(1)}{chart.suffix}</span>
-                  </p>
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs text-gray-500">
+                    <span>Each point is the average of all tests completed that day.</span>
+                    <span className="shrink-0">
+                      Latest: <span className="font-semibold" style={{ color: chart.color }}>{values.at(-1).toFixed(1)}{chart.suffix}</span>
+                    </span>
+                  </div>
                 )}
               </div>
             );
