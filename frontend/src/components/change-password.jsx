@@ -26,7 +26,7 @@ function ChangePassword(){
         window.location.href = '/login';
       }
     } catch(error){
-      alert("Password change failed: " + error.message);
+      alert(error?.response?.data?.message || error.message);
     }
   };
   

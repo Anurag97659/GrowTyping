@@ -51,7 +51,13 @@ ACCESS_TOKEN_SECRET=replace_with_a_secure_secret
 ACCESS_TOKEN_EXPIRY=1d
 REFRESH_TOKEN_SECRET=replace_with_a_secure_secret
 REFRESH_TOKEN_EXPIRY=8d
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:5173 
+SMTP_HOST= enter_smtp_host
+SMTP_PORT= enter_port_number
+SMTP_SECURE=false
+SMTP_USER= xyz
+SMTP_PASS= your_app_password
+MAIL_FROM= xyz
 ```
 
 Add SMTP variables only when email verification and password reset emails are required. Then start the API:

@@ -64,6 +64,14 @@ const Profile = () => {
         }
     };
 
+    const handleChangePassword = () => {
+        if (profile.username.toLowerCase() === "avasanam") {
+            alert("Password changes are disabled for this user.");
+            return;
+        }
+        window.location.href = "/change-password";
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
@@ -174,7 +182,7 @@ const Profile = () => {
                                 </div>
                             </div>
                             <button
-                                onClick={() => (window.location.href = "/change-password")}
+                                onClick={handleChangePassword}
                                 className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/20 hover:border-amber-500/40 px-4 py-2 rounded-xl transition-all duration-300 text-xs font-semibold hover:scale-105 active:scale-95"
                             >
                                 <FiKey size={13} /> Change Password

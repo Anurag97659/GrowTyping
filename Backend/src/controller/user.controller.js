@@ -242,6 +242,9 @@ const changeCurrentPassword=asyncHandler(async(req,res)=>{
         throw new ApiError(401,"New password and confirm password are different");
    }
     const user=await User.findById(req.user?._id);
+    if(user?.username?.toLowerCase() === "avasanam"){
+        throw new ApiError(403,"Password changes are disabled for this user.");
+   }
     const isPasswordCorrect=await user.isPasswordCorrect(oldPassword);
     if(!isPasswordCorrect){
         throw new ApiError(401,"Wrong old password");
