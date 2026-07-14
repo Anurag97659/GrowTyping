@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 
 const WORDS = [
   // ============================================================
@@ -398,15 +398,40 @@ const WORDS = [
   "past", "present", "future", "tradition", "heritage", "legacy",
 ];
 
-const generateText = (count = 200) =>
+const PUNCTUATION_MARKS = [",", ".", "!", "?", ":", ";"];
+const Symbols = ["@", "#", "$", "%", "&", "*", "(", ")", "-", "_", "+", "=", "{", "}", "[", "]", "|", "\\", "/", "<", ">", "~", "^", "`"];
+
+const generateText = (count = 200, mode = "normal") =>
   Array.from({ length: count })
-    .map(() => WORDS[Math.floor(Math.random() * WORDS.length)])
+    .map((_, index) => {
+      let token = WORDS[Math.floor(Math.random() * WORDS.length)];
+      const addPunctuation = mode === "punctuation" || mode === "all";
+      const addNumbers = mode === "numbers" || mode === "all";
+      const addSymbols = mode === "symbols" || mode === "all";
+
+      if (addPunctuation && (index + 1) % 7 === 0) {
+        token += PUNCTUATION_MARKS[Math.floor(Math.random() * PUNCTUATION_MARKS.length)];
+      }
+      if (addNumbers && (index + 1) % 6 === 0) {
+        token += ` ${Math.floor(Math.random() * 9000) + 1000}`;
+      }
+      if (addSymbols && (index + 1) % 5 === 0) {
+        token += Symbols[Math.floor(Math.random() * Symbols.length)];
+      }
+
+      return token;
+    })
     .join(" ");
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-  withCredentials: true,
-});
+const getQueuedReplayTest = () => {
+  try {
+    const savedReplay = window.sessionStorage.getItem("growtyping.replayTest");
+    window.sessionStorage.removeItem("growtyping.replayTest");
+    return savedReplay ? JSON.parse(savedReplay) : null;
+  } catch {
+    return null;
+  }
+};
 
 export default function TypingPage() {
   const navigate = useNavigate();
@@ -453,6 +478,7 @@ export default function TypingPage() {
   }, [theme, loggedIn, themeLoaded]);
 
   const [testType, setTestType] = useState("30s");
+  const [textMode, setTextMode] = useState("normal");
   const durationMap = { "15s": 15, "30s": 30, "60s": 60, custom: 0 };
 
   const [text, setText] = useState("");
@@ -468,19 +494,50 @@ export default function TypingPage() {
   const totalRef = useRef(0);
   const savedRef = useRef(false);
   const weakKeysRef = useRef({});
+  const keyStatsRef = useRef({});
   const startTimeRef = useRef(null);
   const finalDurationRef = useRef(null);
+  const appliedResetRef = useRef(null);
+  const replayedTestIdsRef = useRef(new Set());
+  const [pendingReplay, setPendingReplay] = useState(null);
 
-  useEffect(() => resetTest(), [testType]);
+  useEffect(() => {
+    const replayTest = getQueuedReplayTest();
+    if (!replayTest) return;
 
-  const resetTest = () => {
+    setPendingReplay({ ...replayTest, replayId: Date.now() });
+    if (["15s", "30s", "60s", "custom"].includes(replayTest.testType)) {
+      setTestType(replayTest.testType);
+    }
+  }, []);
+
+  useEffect(() => {
+    const resetKey = `${testType}:${textMode}:${pendingReplay?.replayId || "new"}`;
+    if (appliedResetRef.current === resetKey) return;
+
+    appliedResetRef.current = resetKey;
+    resetTest(pendingReplay);
+  }, [testType, textMode, pendingReplay]);
+
+  const resetTest = (replayTest = null) => {
     clearInterval(timerRef.current);
     timerRef.current = null;
+    const shouldReplay =
+      replayTest?.testType === testType &&
+      !replayedTestIdsRef.current.has(replayTest.replayId);
+
     setText(
-      testType === "custom"
+      shouldReplay && typeof replayTest.testText === "string"
+        ? replayTest.testText
+        : testType === "custom"
         ? "The quick brown fox jumps over the lazy dog"
-        : generateText(),
+        : generateText(200, textMode),
     );
+    if (shouldReplay) {
+      replayedTestIdsRef.current.add(replayTest.replayId);
+      appliedResetRef.current = `${testType}:${textMode}:new`;
+      setPendingReplay(null);
+    }
     setTypedChars([]);
     setTimeLeft(durationMap[testType]);
     startedRef.current = false;
@@ -492,6 +549,7 @@ export default function TypingPage() {
     incorrectRef.current = 0;
     totalRef.current = 0;
     weakKeysRef.current = {};
+    keyStatsRef.current = {};
   };
 
   const startTimer = () => {
@@ -533,14 +591,23 @@ export default function TypingPage() {
     }
     const expected = text[typedChars.length];
     const isCorrect = e.key === expected;
+    const key = /^[a-z]$/i.test(expected) ? expected.toLowerCase() : null;
 
     totalRef.current++;
+
+    if (key) {
+      keyStatsRef.current[key] ??= { attempts: 0, mistakeCount: 0 };
+      keyStatsRef.current[key].attempts++;
+    }
 
     if (isCorrect) {
       correctRef.current++;
     } else {
       incorrectRef.current++;
-      weakKeysRef.current[expected] = (weakKeysRef.current[expected] || 0) + 1;
+      if (key) {
+        weakKeysRef.current[key] = (weakKeysRef.current[key] || 0) + 1;
+        keyStatsRef.current[key].mistakeCount++;
+      }
     }
 
     const newTyped = [...typedChars, { char: e.key, correct: isCorrect }];
@@ -583,9 +650,15 @@ export default function TypingPage() {
       correctChars: correctRef.current,
       incorrectChars: incorrectRef.current,
       testType,
+      testText: text,
       weakKeys: Object.entries(weakKeysRef.current).map(([key, count]) => ({
         key,
-        count,
+        mistakeCount: count,
+      })),
+      keyStats: Object.entries(keyStatsRef.current).map(([key, stats]) => ({
+        key,
+        attempts: stats.attempts,
+        mistakeCount: stats.mistakeCount,
       })),
     };
 
@@ -925,6 +998,23 @@ export default function TypingPage() {
                   {m}
                 </button>
               ))}
+            </div>
+            <div className="relative">
+              <label htmlFor="text-mode" className="sr-only">Typing text mode</label>
+              <select
+                id="text-mode"
+                value={textMode}
+                onChange={(e) => setTextMode(e.target.value)}
+                className="px-3 py-1.5 text-sm rounded bg-slate-800 text-slate-200 border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors"
+                title="Typing text mode"
+              >
+                <option value="normal" className="bg-slate-900 text-slate-100">Normal</option>
+                <option value="punctuation" className="bg-slate-900 text-slate-100">Punctuation</option>
+                <option value="numbers" className="bg-slate-900 text-slate-100">Numbers</option>
+                <option value="symbols" className="bg-slate-900 text-slate-100">Symbols</option>
+                <option value="all" className="bg-slate-900 text-slate-100">All</option>
+
+              </select>
             </div>
             <div className="relative">
               <select

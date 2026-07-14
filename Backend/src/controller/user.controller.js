@@ -6,10 +6,11 @@ import {ApiResponse} from '../utils/ApiResponse.js';
 import crypto from "crypto";
 import { sendVerificationMail, sendPasswordResetMail, hasSmtpConfig } from "../utils/mail.service.js";
 
+const isProduction = process.env.NODE_ENV === "production";
 const cookieOptions = {
   httpOnly: true,
-  secure: true,       
-  sameSite: "none",    
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
 };
 
 
@@ -131,10 +132,6 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
         if(incomingRefreshToken !==user?.refreshToken){
             throw new ApiError(400,"Refresh token does not match -> Invalid refresh token");
        }
-        const options={
-            httpOnly: true,
-            secure: true
-       };
         const {accessToken, newRefreshToken}=await generateAccessTokenAndRefreshToken(user._id);
         return res
             .status(200)
@@ -178,10 +175,6 @@ const loginuser=asyncHandler(async(req,res)=>{
     const{accessToken,refreshToken}=await generateAccessTokenAndRefreshToken(user._id);
     const loggedUser=await User.findById(user._id).select("-password -refreshToken");
     
-    const options={
-        httpOnly:true,
-        secure:true
-   };
     return res
         .status(200)
         .cookie("accessToken",accessToken,cookieOptions)
@@ -236,10 +229,6 @@ const logoutuser=asyncHandler(async(req,res)=>{
    }
   );
 
-  const options={
-    httpOnly:true,
-    secure:true,
- };
   return res
     .status(200)
     .clearCookie("accessToken",cookieOptions)

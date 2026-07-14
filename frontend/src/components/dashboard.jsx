@@ -1,17 +1,112 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api, { clearAccessToken } from "../lib/api";
 import { FiSettings, FiArrowLeft } from "react-icons/fi";
 
+const KEYBOARD_ROWS = [
+  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+  ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+  ["z", "x", "c", "v", "b", "n", "m"],
+];
+
+const HISTORY_PAGE_SIZE = 10;
+
+const getBarLayout = (itemCount) => {
+  const plotLeft = 44;
+  const plotWidth = 536;
+  const count = Math.max(itemCount, 1);
+  const gap = count === 1 ? 0 : Math.min(24, Math.max(12, (plotWidth / count) * 0.12));
+  const barWidth = (plotWidth - gap * (count - 1)) / count;
+
+  return {
+    barWidth,
+    x: (index) => plotLeft + index * (barWidth + gap),
+  };
+};
+
+const getTrendPoints = (values, maximum) => {
+  const plotLeft = 42;
+  const plotTop = 18;
+  const plotWidth = 536;
+  const plotHeight = 160;
+
+  return values
+    .map((value, index) => {
+      const x = values.length === 1 ? plotLeft + plotWidth / 2 : plotLeft + (index / (values.length - 1)) * plotWidth;
+      const y = plotTop + plotHeight - (value / maximum) * plotHeight;
+      return `${x},${y}`;
+    })
+    .join(" ");
+};
+
+const formatProgressDate = (date) =>
+  new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+
+const getHeatmapStyle = (keyStat, legacyMaximum) => {
+  if (!keyStat) {
+    return {
+      backgroundColor: "rgba(255,255,255,0.04)",
+      borderColor: "rgba(255,255,255,0.1)",
+      color: "#6b7280",
+    };
+  }
+
+  const intensity = keyStat.attempts
+    ? keyStat.errorRate
+    : (keyStat.mistakes / legacyMaximum) * 10;
+
+  if (intensity === 0) {
+    return {
+      backgroundColor: "rgba(16, 185, 129, 0.18)",
+      borderColor: "rgba(52, 211, 153, 0.55)",
+      color: "#d1fae5",
+    };
+  }
+  if (intensity < 3) {
+    return {
+      backgroundColor: "rgba(250, 204, 21, 0.2)",
+      borderColor: "rgba(250, 204, 21, 0.6)",
+      color: "#fef3c7",
+    };
+  }
+  if (intensity < 7) {
+    return {
+      backgroundColor: "rgba(249, 115, 22, 0.22)",
+      borderColor: "rgba(251, 146, 60, 0.65)",
+      color: "#ffedd5",
+    };
+  }
+  return {
+    backgroundColor: "rgba(244, 63, 94, 0.24)",
+    borderColor: "rgba(251, 113, 133, 0.7)",
+    color: "#ffe4e6",
+  };
+};
 
 const Dashboard = () => {
   const [stats, setStats] = useState({});
   const [wpmByType, setWpmByType] = useState([]);
   const [accuracyByType, setAccuracyByType] = useState([]);
   const [weakKeys, setWeakKeys] = useState([]);
+  const [keyboardHeatmap, setKeyboardHeatmap] = useState([]);
+  const [dailyProgress, setDailyProgress] = useState([]);
   const [streak, setStreak] = useState(0);
   const [history, setHistory] = useState([]);
+  const [historyPagination, setHistoryPagination] = useState({
+    page: 1,
+    totalRecords: 0,
+    hasMore: false,
+  });
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("thisYear");
+  const [dashboardTheme, setDashboardTheme] = useState(() =>
+    typeof window === "undefined"
+      ? "current"
+      : window.localStorage.getItem("growtyping.dashboardTheme") || "current",
+  );
   const [bestRecordByType, setBestRecordByType] = useState({});
   const [allTimeBestByType, setAllTimeBestByType] = useState({});
   const [username, setUsername] = useState("User");
@@ -28,11 +123,6 @@ const Dashboard = () => {
   const [viewingUserStreak, setViewingUserStreak] = useState(0);
   const [loadingButtons, setLoadingButtons] = useState({});
 
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API,
-    withCredentials: true,
-  });
-
   const fetchDashboard = async (selectedRange) => {
     try {
       setLoading(true);
@@ -44,22 +134,17 @@ const Dashboard = () => {
       setAccuracyByType(accuracyData.data.data.map((item) => ({ testType: item._id, averageAccuracy: item.averageAccuracy ?? 0 })));
       const weakKeysData = await api.get(`GrowTyping/v1/stats/weak-keys?range=${selectedRange}`);
       setWeakKeys(weakKeysData.data.data);
+      const heatmapData = await api.get(`GrowTyping/v1/stats/keyboard-heatmap?range=${selectedRange}`);
+      setKeyboardHeatmap(heatmapData.data.data);
+      const progressData = await api.get(`GrowTyping/v1/stats/daily-progress?range=${selectedRange}`);
+      setDailyProgress(progressData.data.data);
       const streakData = await api.get(`GrowTyping/v1/stats/streak`);
       setStreak(streakData.data.data.streak || 0);
-      const historyData = await api.get(`GrowTyping/v1/stats/history?range=${selectedRange}`);
-      const hist = historyData.data.data;
-      setHistory(hist);
-      const recordByType = {};
-      hist.forEach((h) => {
-        if (!recordByType[h.testType]) {
-          recordByType[h.testType] = { highestWpm: h.wpm, highestAccuracy: h.accuracy, longestDuration: h.duration };
-        } else {
-          recordByType[h.testType].highestWpm = Math.max(recordByType[h.testType].highestWpm, h.wpm);
-          recordByType[h.testType].highestAccuracy = Math.max(recordByType[h.testType].highestAccuracy, h.accuracy);
-          recordByType[h.testType].longestDuration = Math.max(recordByType[h.testType].longestDuration, h.duration);
-        }
-      });
-      setBestRecordByType(recordByType);
+      const historyData = await api.get(`GrowTyping/v1/stats/history?range=${selectedRange}&page=1&limit=${HISTORY_PAGE_SIZE}`);
+      const historyDataSet = historyData.data.data;
+      setHistory(historyDataSet.items);
+      setHistoryPagination(historyDataSet.pagination);
+      setBestRecordByType(historyDataSet.bestRecords);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {
@@ -70,19 +155,8 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchAllTimeBest = async () => {
       try {
-        const allTimeData = await api.get(`GrowTyping/v1/stats/history`);
-        const hist = allTimeData.data.data;
-        const recordByType = {};
-        hist.forEach((h) => {
-          if (!recordByType[h.testType]) {
-            recordByType[h.testType] = { highestWpm: h.wpm, highestAccuracy: h.accuracy, longestDuration: h.duration };
-          } else {
-            recordByType[h.testType].highestWpm = Math.max(recordByType[h.testType].highestWpm, h.wpm);
-            recordByType[h.testType].highestAccuracy = Math.max(recordByType[h.testType].highestAccuracy, h.accuracy);
-            recordByType[h.testType].longestDuration = Math.max(recordByType[h.testType].longestDuration, h.duration);
-          }
-        });
-        setAllTimeBestByType(recordByType);
+        const allTimeData = await api.get(`GrowTyping/v1/stats/history?page=1&limit=1`);
+        setAllTimeBestByType(allTimeData.data.data.bestRecords);
       } catch (err) {
         console.error("Error fetching all-time best:", err);
       }
@@ -123,11 +197,42 @@ const Dashboard = () => {
   const handleLogout = async () => {
     try {
       await api.post("GrowTyping/v1/users/logout");
+      clearAccessToken();
       setIsLoggedIn(false);
       window.location.href = "/typing";
     } catch (err) {
       console.error("Logout failed", err);
     }
+  };
+
+  const loadMoreHistory = async () => {
+    if (!historyPagination.hasMore || historyLoadingMore) return;
+
+    setHistoryLoadingMore(true);
+    try {
+      const nextPage = historyPagination.page + 1;
+      const response = await api.get(
+        `GrowTyping/v1/stats/history?range=${range}&page=${nextPage}&limit=${HISTORY_PAGE_SIZE}`,
+      );
+      const historyData = response.data.data;
+      setHistory((currentHistory) => [...currentHistory, ...historyData.items]);
+      setHistoryPagination(historyData.pagination);
+    } catch (err) {
+      console.error("Error loading more typing history:", err);
+    } finally {
+      setHistoryLoadingMore(false);
+    }
+  };
+
+  const replayTest = (test) => {
+    window.sessionStorage.setItem(
+      "growtyping.replayTest",
+      JSON.stringify({
+        testType: test.testType,
+        testText: test.testText,
+      }),
+    );
+    window.location.href = "/typing";
   };
 
   const viewUserProfile = async (username) => {
@@ -253,26 +358,35 @@ const Dashboard = () => {
     fetchDashboard(range);
   }, [range]);
 
+  useEffect(() => {
+    window.localStorage.setItem("growtyping.dashboardTheme", dashboardTheme);
+  }, [dashboardTheme]);
+
   const rangeLabel = {
     today: "Today", lastDay: "Last Day", lastWeek: "Last Week",
     lastMonth: "Last Month", last6Months: "Last 6 Months",
     thisYear: "This Year", previousYears: "Previous Years",
   };
+  const isLightTheme = dashboardTheme === "light";
 
   if (loading)
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0f0f1a]">
+      <div className={`flex items-center justify-center min-h-screen ${isLightTheme ? "bg-slate-100" : "bg-[#0f0f1a]"}`}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-violet-300 text-lg font-semibold tracking-widest animate-pulse">Loading Dashboard...</p>
+          <p className="text-violet-500 text-lg font-semibold tracking-widest animate-pulse">Loading Dashboard...</p>
         </div>
       </div>
     );
 
   return (
     <div
-      className="min-h-screen font-sans text-white"
-      style={{ background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)" }}
+      className={`dashboard min-h-screen font-sans ${isLightTheme ? "dashboard-light text-slate-900" : "text-white"}`}
+      style={{
+        background: isLightTheme
+          ? "linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #e0e7ff 100%)"
+          : "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)",
+      }}
     >
      
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-black/30 border-b border-white/10 px-8 py-4 flex items-center justify-between shadow-2xl">
@@ -301,6 +415,27 @@ const Dashboard = () => {
               <option value="thisYear" className="bg-[#1a1a2e]">This Year</option>
               <option value="previousYears" className="bg-[#1a1a2e]">Previous Years</option>
             </select>
+          </div>
+
+          <div className="flex items-center rounded-xl border border-white/10 bg-white/5 p-1">
+            {[
+              ["current", "Current"],
+              ["light", "Light"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setDashboardTheme(value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  dashboardTheme === value
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "text-gray-400 hover:text-white"
+                }`}
+                aria-pressed={dashboardTheme === value}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           <div className="relative">
@@ -491,13 +626,13 @@ const Dashboard = () => {
         </div>
 
        
-        <div className="grid grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           <div className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-violet-500/30 transition-all">
             <div className="flex items-center gap-2 mb-5">
               <div className="w-2.5 h-2.5 rounded-full bg-violet-400"></div>
               <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Avg WPM by Type</h3>
             </div>
-            <svg width="100%" height="220">
+            <svg width="100%" height="220" viewBox="0 0 600 240" preserveAspectRatio="none">
               {(() => {
                 const maxWpm = Math.max(50, ...wpmByType.map((item) => item.averageWpm ?? 0));
                 const step = Math.ceil(maxWpm / 5);
@@ -507,12 +642,12 @@ const Dashboard = () => {
                       const val = i * step;
                       return (
                         <g key={i}>
-                          <line x1="35" y1={200 - (val / maxWpm) * 170} x2="95%" y2={200 - (val / maxWpm) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <line x1="35" y1={200 - (val / maxWpm) * 170} x2="580" y2={200 - (val / maxWpm) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
                           <text x="0" y={200 - (val / maxWpm) * 170 + 4} fontSize="10" fill="#6B7280">{val}</text>
                         </g>
                       );
                     })}
-                    <line x1="35" y1="200" x2="95%" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                    <line x1="35" y1="200" x2="580" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
                   </>
                 );
               })()}
@@ -520,6 +655,9 @@ const Dashboard = () => {
                 const avgWpm = item.averageWpm ?? 0;
                 const maxWpm = Math.max(50, ...wpmByType.map((i) => i.averageWpm ?? 0));
                 const barHeight = (avgWpm / maxWpm) * 170;
+                const layout = getBarLayout(wpmByType.length);
+                const barX = layout.x(index);
+                const barCenter = barX + layout.barWidth / 2;
                 return (
                   <g key={index}>
                     <defs>
@@ -528,9 +666,9 @@ const Dashboard = () => {
                         <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.6" />
                       </linearGradient>
                     </defs>
-                    <rect x={index * 65 + 40} y={200 - barHeight} width="42" height={barHeight} fill={`url(#wpmGrad${index})`} rx="6" />
-                    <text x={index * 65 + 61} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#c4b5fd" fontWeight="bold">{avgWpm.toFixed(1)}</text>
-                    <text x={index * 65 + 61} y={216} textAnchor="middle" fontSize="11" fill="#6B7280">{item._id}</text>
+                    <rect x={barX} y={200 - barHeight} width={layout.barWidth} height={barHeight} fill={`url(#wpmGrad${index})`} rx="6" />
+                    <text x={barCenter} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#c4b5fd" fontWeight="bold">{avgWpm.toFixed(1)}</text>
+                    <text x={barCenter} y="216" textAnchor="middle" fontSize="11" fill="#6B7280">{item._id}</text>
                   </g>
                 );
               })}
@@ -543,17 +681,20 @@ const Dashboard = () => {
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
               <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Avg Accuracy by Type</h3>
             </div>
-            <svg width="100%" height="220">
+            <svg width="100%" height="220" viewBox="0 0 600 240" preserveAspectRatio="none">
               {[0, 20, 40, 60, 80, 100].map((val, idx) => (
                 <g key={idx}>
-                  <line x1="35" y1={200 - (val / 100) * 170} x2="95%" y2={200 - (val / 100) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line x1="35" y1={200 - (val / 100) * 170} x2="580" y2={200 - (val / 100) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
                   <text x="0" y={200 - (val / 100) * 170 + 4} fontSize="10" fill="#6B7280">{val}</text>
                 </g>
               ))}
-              <line x1="35" y1="200" x2="95%" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <line x1="35" y1="200" x2="580" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {accuracyByType.map((item, index) => {
                 const avgAcc = item.averageAccuracy ?? 0;
                 const barHeight = (avgAcc / 100) * 170;
+                const layout = getBarLayout(accuracyByType.length);
+                const barX = layout.x(index);
+                const barCenter = barX + layout.barWidth / 2;
                 return (
                   <g key={index}>
                     <defs>
@@ -562,60 +703,211 @@ const Dashboard = () => {
                         <stop offset="100%" stopColor="#059669" stopOpacity="0.6" />
                       </linearGradient>
                     </defs>
-                    <rect x={index * 65 + 40} y={200 - barHeight} width="42" height={barHeight} fill={`url(#accGrad${index})`} rx="6" />
-                    <text x={index * 65 + 61} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#6ee7b7" fontWeight="bold">{avgAcc.toFixed(1)}</text>
-                    <text x={index * 65 + 61} y={216} textAnchor="middle" fontSize="11" fill="#6B7280">{item.testType}</text>
+                    <rect x={barX} y={200 - barHeight} width={layout.barWidth} height={barHeight} fill={`url(#accGrad${index})`} rx="6" />
+                    <text x={barCenter} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#6ee7b7" fontWeight="bold">{avgAcc.toFixed(1)}</text>
+                    <text x={barCenter} y="216" textAnchor="middle" fontSize="11" fill="#6B7280">{item.testType}</text>
                   </g>
                 );
               })}
             </svg>
           </div>
-
-
           <div className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-rose-500/30 transition-all">
             <div className="flex items-center gap-2 mb-5">
               <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
               <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Top Weak Keys</h3>
             </div>
-            <svg width="100%" height="220">
+            <svg width="100%" height="220" viewBox="0 0 600 240" preserveAspectRatio="none">
               {(() => {
                 const maxMistakes = Math.max(10, ...weakKeys.map((item) => item.totalMistakes ?? 0));
                 const step = Math.ceil(maxMistakes / 5);
                 return (
                   <>
                     {[0, 1, 2, 3, 4, 5].map((i) => {
-                      const val = i * step;
+                      const value = i * step;
                       return (
                         <g key={i}>
-                          <line x1="35" y1={200 - (val / maxMistakes) * 170} x2="95%" y2={200 - (val / maxMistakes) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                          <text x="0" y={200 - (val / maxMistakes) * 170 + 4} fontSize="10" fill="#6B7280">{val}</text>
+                          <line x1="35" y1={200 - (value / maxMistakes) * 170} x2="580" y2={200 - (value / maxMistakes) * 170} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <text x="0" y={200 - (value / maxMistakes) * 170 + 4} fontSize="10" fill="#6B7280">{value}</text>
                         </g>
                       );
                     })}
-                    <line x1="35" y1="200" x2="95%" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                    <line x1="35" y1="200" x2="580" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
                   </>
                 );
               })()}
               {weakKeys.map((item, index) => {
                 const mistakes = item.totalMistakes ?? 0;
-                const maxMistakes = Math.max(10, ...weakKeys.map((i) => i.totalMistakes ?? 0));
+                const maxMistakes = Math.max(10, ...weakKeys.map((keyStat) => keyStat.totalMistakes ?? 0));
                 const barHeight = (mistakes / maxMistakes) * 170;
+                const layout = getBarLayout(weakKeys.length);
+                const barX = layout.x(index);
+                const barCenter = barX + layout.barWidth / 2;
                 return (
-                  <g key={index}>
+                  <g key={item._id || index}>
                     <defs>
                       <linearGradient id={`weakGrad${index}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#fb7185" />
                         <stop offset="100%" stopColor="#be123c" stopOpacity="0.6" />
                       </linearGradient>
                     </defs>
-                    <rect x={index * 65 + 40} y={200 - barHeight} width="42" height={barHeight} fill={`url(#weakGrad${index})`} rx="6" />
-                    <text x={index * 65 + 61} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#fda4af" fontWeight="bold">{mistakes}</text>
-                    <text x={index * 65 + 61} y={216} textAnchor="middle" fontSize="11" fill="#6B7280">{item._id}</text>
+                    <rect x={barX} y={200 - barHeight} width={layout.barWidth} height={barHeight} fill={`url(#weakGrad${index})`} rx="6" />
+                    <text x={barCenter} y={200 - barHeight - 8} textAnchor="middle" fontSize="11" fill="#fda4af" fontWeight="bold">{mistakes}</text>
+                    <text x={barCenter} y="216" textAnchor="middle" fontSize="11" fill="#6B7280">{item._id}</text>
                   </g>
                 );
               })}
             </svg>
           </div>
+          <div className="lg:col-span-3 bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-rose-500/30 transition-all">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+                <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Keyboard Heatmap</h3>
+              </div>
+              <p className="text-xs text-gray-500">Hover a key to view its mistake rate</p>
+            </div>
+            {(() => {
+              const heatmapByKey = Object.fromEntries(
+                keyboardHeatmap.map((keyStat) => [keyStat.key, keyStat]),
+              );
+              const legacyMaximum = Math.max(
+                1,
+                ...keyboardHeatmap
+                  .filter((keyStat) => !keyStat.attempts)
+                  .map((keyStat) => keyStat.mistakes),
+              );
+
+              return (
+                <>
+                  <div className="mx-auto max-w-3xl space-y-2" aria-label="Keyboard mistake heatmap">
+                    {KEYBOARD_ROWS.map((row, rowIndex) => (
+                      <div
+                        key={row.join("")}
+                        className={`flex justify-center gap-1.5 sm:gap-2 ${rowIndex === 1 ? "sm:px-5" : rowIndex === 2 ? "sm:px-12" : ""}`}
+                      >
+                        {row.map((key) => {
+                          const keyStat = heatmapByKey[key];
+                          const hasAttemptData = keyStat?.attempts > 0;
+                          const label = !keyStat
+                            ? `${key.toUpperCase()}: no data yet`
+                            : hasAttemptData
+                              ? `${key.toUpperCase()}: ${keyStat.mistakes} mistakes in ${keyStat.attempts} attempts (${keyStat.errorRate}% error rate)`
+                              : `${key.toUpperCase()}: ${keyStat.mistakes} recorded mistakes`;
+
+                          return (
+                            <div
+                              key={key}
+                              title={label}
+                              aria-label={label}
+                              className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-lg border font-mono text-sm font-black uppercase shadow-sm transition-transform hover:-translate-y-0.5 sm:h-14 sm:text-lg"
+                              style={getHeatmapStyle(keyStat, legacyMaximum)}
+                            >
+                              {key}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-400">
+                    {[
+                      ["bg-emerald-400", "0% errors"],
+                      ["bg-yellow-400", "under 3%"],
+                      ["bg-orange-400", "3–7%"],
+                      ["bg-rose-400", "7%+"],
+                    ].map(([color, label]) => (
+                      <span key={label} className="flex items-center gap-1.5">
+                        <span className={`h-2.5 w-2.5 rounded-full ${color}`}></span>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                  {keyboardHeatmap.length === 0 && (
+                    <p className="mt-5 text-center text-xs text-gray-500">
+                      Complete a typing test to start building your heatmap.
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-10">
+          {[
+            {
+              title: "WPM Progress",
+              valueKey: "avgWpm",
+              color: "#a78bfa",
+              fill: "rgba(139, 92, 246, 0.14)",
+              minimum: 50,
+              suffix: " WPM",
+            },
+            {
+              title: "Accuracy Progress",
+              valueKey: "avgAccuracy",
+              color: "#34d399",
+              fill: "rgba(16, 185, 129, 0.14)",
+              minimum: 100,
+              suffix: "%",
+            },
+          ].map((chart) => {
+            const values = dailyProgress.map((entry) => Number(entry[chart.valueKey] ?? 0));
+            const maximum = Math.max(chart.minimum, ...values);
+            const points = getTrendPoints(values, maximum);
+
+            return (
+              <div key={chart.valueKey} className="bg-white/3 border border-white/10 rounded-2xl p-6 hover:border-violet-500/30 transition-all">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: chart.color }}></span>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">{chart.title}</h3>
+                  </div>
+                  <span className="text-xs text-gray-500">{dailyProgress.length} days</span>
+                </div>
+                {dailyProgress.length === 0 ? (
+                  <div className="flex h-[220px] items-center justify-center text-sm text-gray-500">
+                    Complete typing tests to see your progress.
+                  </div>
+                ) : (
+                  <svg width="100%" height="220" viewBox="0 0 600 230" preserveAspectRatio="none" aria-label={chart.title}>
+                    {[0, 0.25, 0.5, 0.75, 1].map((step) => {
+                      const y = 178 - step * 160;
+                      return (
+                        <g key={step}>
+                          <line x1="42" y1={y} x2="578" y2={y} stroke="rgba(148, 163, 184, 0.2)" strokeWidth="1" />
+                          <text x="0" y={y + 4} fill="#6b7280" fontSize="10">{Math.round(maximum * step)}</text>
+                        </g>
+                      );
+                    })}
+                    {values.length > 1 && (
+                      <polygon
+                        points={`42,178 ${points} 578,178`}
+                        fill={chart.fill}
+                      />
+                    )}
+                    <polyline points={points} fill="none" stroke={chart.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    {values.map((value, index) => {
+                      const x = values.length === 1 ? 310 : 42 + (index / (values.length - 1)) * 536;
+                      const y = 18 + 160 - (value / maximum) * 160;
+                      return <circle key={dailyProgress[index]._id.date} cx={x} cy={y} r="4" fill={chart.color} stroke="#111827" strokeWidth="2" />;
+                    })}
+                    <text x="42" y="214" fill="#6b7280" fontSize="10">{formatProgressDate(dailyProgress[0]._id.date)}</text>
+                    {dailyProgress.length > 1 && (
+                      <text x="578" y="214" textAnchor="end" fill="#6b7280" fontSize="10">
+                        {formatProgressDate(dailyProgress[dailyProgress.length - 1]._id.date)}
+                      </text>
+                    )}
+                  </svg>
+                )}
+                {dailyProgress.length > 0 && (
+                  <p className="mt-2 text-right text-xs text-gray-500">
+                    Latest: <span className="font-semibold" style={{ color: chart.color }}>{values.at(-1).toFixed(1)}{chart.suffix}</span>
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
 
        
@@ -807,14 +1099,14 @@ const Dashboard = () => {
               <h2 className="text-lg font-bold text-white">Typing History</h2>
             </div>
             <span className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-              {history.length} records
+              {historyPagination.totalRecords} records
             </span>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
                 <tr className="bg-white/3">
-                  {["Date", "Test Type", "WPM", "Accuracy", "Duration", "Chars Typed", "Correct", "Wrong"].map((th) => (
+                  {["Date", "Test Type", "WPM", "Accuracy", "Duration", "Chars Typed", "Correct", "Wrong", "Action"].map((th) => (
                     <th key={th} className="px-5 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">
                       {th}
                     </th>
@@ -824,7 +1116,7 @@ const Dashboard = () => {
               <tbody className="divide-y divide-white/5">
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="text-center py-16 text-gray-600">
+                    <td colSpan="9" className="text-center py-16 text-gray-600">
                       <div className="text-4xl mb-3">📊</div>
                       <div className="text-sm">No typing history available for this range</div>
                     </td>
@@ -854,12 +1146,34 @@ const Dashboard = () => {
                       <td className="px-5 py-4">
                         <span className="text-sm font-bold text-rose-400">{item.incorrectChars}</span>
                       </td>
+                      <td className="px-5 py-4">
+                        <button
+                          type="button"
+                          onClick={() => replayTest(item)}
+                          className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-bold text-violet-300 transition-colors hover:bg-violet-500/20"
+                          title={item.testText ? "Replay the exact test text" : "Retake this duration with a new text"}
+                        >
+                          Retype
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+          {historyPagination.hasMore && (
+            <div className="flex justify-center border-t border-white/5 px-6 py-5">
+              <button
+                type="button"
+                onClick={loadMoreHistory}
+                disabled={historyLoadingMore}
+                className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-5 py-2.5 text-sm font-semibold text-violet-300 transition-all hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {historyLoadingMore ? "Loading…" : `Load 10 more (${history.length} of ${historyPagination.totalRecords})`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

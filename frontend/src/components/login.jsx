@@ -1,24 +1,21 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api, { setAccessToken } from "../lib/api";
 
 function Login() {
   const [username, setusername] = useState("");
   const [password, setpassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordUsername, setForgotPasswordUsername] = useState("");
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-    withCredentials: true,
-  });
-
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError("");
 
     try {
       const res = await api.post("GrowTyping/v1/users/login", {
@@ -27,13 +24,17 @@ function Login() {
       });
 
       if (res.data.error) {
-        alert(res.data.error);
+        setLoginError(res.data.error);
       } else {
-        alert("Login successful");
+        setAccessToken(res.data?.data?.accessToken);
         window.location.href = "/typing";
       }
     } catch (error) {
-      alert(error?.response?.data?.message || "Login failed. Please try again.");
+      setLoginError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to sign in. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -86,6 +87,14 @@ function Login() {
           </p>
 
           <form onSubmit={submit} className="space-y-3">
+            {loginError && (
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-200"
+              >
+                {loginError}
+              </div>
+            )}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider">
                 Username

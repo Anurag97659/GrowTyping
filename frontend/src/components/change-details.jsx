@@ -1,16 +1,11 @@
 import React,{ useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 
 function ChangeDetails(){
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [fullname, setFullname] = useState("");
   const [address, setAddress] = useState("");
-
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-    withCredentials: true,
-  });
 
   const submit = async (e) => {
     e.preventDefault();

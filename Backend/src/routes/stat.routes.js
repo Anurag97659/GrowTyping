@@ -6,6 +6,7 @@ import {
     getAverageWpmByType,
     getDailyProgress,
     getTopWeakKeys,
+    getKeyboardHeatmap,
     getTypingStreak,
     getTypingHistory,
     getAverageAccuracyByType,
@@ -22,6 +23,7 @@ router.route("/dashboard").get(verifyJWT, getDashboardStats);
 router.route("/average-wpm").get(verifyJWT, getAverageWpmByType);
 router.route("/daily-progress").get(verifyJWT, getDailyProgress);
 router.route("/weak-keys").get(verifyJWT, getTopWeakKeys);
+router.route("/keyboard-heatmap").get(verifyJWT, getKeyboardHeatmap);
 router.route("/streak").get(verifyJWT, getTypingStreak);
 router.route("/history").get(verifyJWT, getTypingHistory);
 router.route("/average-accuracy").get(verifyJWT, getAverageAccuracyByType);

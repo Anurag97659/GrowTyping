@@ -33,6 +33,10 @@ const typingStatSchema = new Schema(
         enum: ["15s", "30s", "60s", "custom"],
         required: true
     },
+    testText:{
+        type: String,
+        maxlength: 10000
+    },
 
     correctChars:{
         type: Number,
@@ -46,6 +50,13 @@ const typingStatSchema = new Schema(
        {
             key:{ type: String },
             mistakeCount:{ type: Number }
+        }
+    ],
+    keyStats: [
+        {
+            key: { type: String },
+            attempts: { type: Number, min: 0 },
+            mistakeCount: { type: Number, min: 0 }
         }
     ],
     testDate:{

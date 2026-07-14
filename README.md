@@ -1,226 +1,119 @@
 # GrowTyping
 
-![GrowTyping](https://img.shields.io/badge/Typing-App-Green)
-![React](https://img.shields.io/badge/Frontend-React-blue)
-![Node.js](https://img.shields.io/badge/Backend-Node.js-green)
-![MongoDB](https://img.shields.io/badge/Database-MongoDB-green)
+GrowTyping is a full-stack typing practice application for improving typing speed, accuracy, and key-level consistency. It combines timed exercises with saved performance analytics, replayable tests, and a responsive dashboard.
 ### **Live Demo:** [GrowTyping Demo](https://growtyping-1.onrender.com/) || **Demo username and password = Avasanam && 123456789**
-If you are registering your account, please check your Spam or Promotions folder for the authentication email, as it may not appear in your primary inbox due to email filtering.
 
-## **Project Overview**
-**GrowTyping** is a full-stack typing practice and analytics web application designed to help users improve their typing speed, accuracy, and overall performance. The platform provides an interactive environment where users can take timed typing tests with real English words, track their live performance, and analyze detailed statistics over time.
+## Features
 
-The application emphasizes realistic typing behavior, including penalties for corrections and accurate tracking of WPM (words per minute) and typing accuracy. The project is built using modern web development technologies with a **React frontend** and a **Node.js/Express backend**, storing user and test data in **MongoDB**.
+- Timed typing tests: 15 seconds, 30 seconds, 60 seconds, and custom tests.
+- Text modes: Normal, Punctuation, Numbers, Symbols, and All.
+- Live WPM and accuracy feedback while typing.
+- Per-key mistake tracking with a keyboard heatmap and weak-key analysis.
+- Replay a saved test using its original passage and duration.
+- Dashboard charts for WPM, accuracy, daily progress, history, streaks, and best records.
+- History pagination with a Load More action.
+- User accounts, email verification, profile management, and password reset.
+- Follow users and view public typing profiles.
+- Dashboard light/current theme switch and persisted typing-page themes.
 
----
+## Technology Stack
 
-## **Key Features**
-- Multiple typing test durations: 15s, 30s, 60s, and custom.
-- **Top 5 Weak Keys Analysis:** Identify and display the user's most frequently mistyped keys for targeted improvement.
-- Live WPM and accuracy calculation.
-- Backspace functionality only corrects wrong characters and deducts accuracy.
-- Thin, blinking typing cursor for a professional typing experience.
-- Highlighting of correct and incorrect characters during typing.
-- **Email Verification:** Users must verify their email before accessing the dashboard and typing tests.
-- Save typing statistics including correct characters, incorrect characters, weak keys, WPM, and accuracy.
-- **Theme Persistence:** Save and auto-load user's preferred theme from database (16+ custom themes including cyberpunk, contrast, glass morphism, luxury, and professional designs).
-- **Social Features:** Follow/Unfollow users, manage followers and following lists with action buttons.
-- **Public User Profiles:** View any user's stats, followers, following, and best records without authentication.
-- **User Stats Dashboard:** Comprehensive stats modal showing total sessions, time spent, average WPM, typing streak, and all-time best records per test type.
-
-
----
-
-## **Tech Stack**
-- **Frontend:** React, TailwindCSS
-- **Backend:** Node.js, Express.js
-- **Database:** MongoDB Atlas (NoSQL)
-- **HTTP Client:** Axios
-- **Routing:** React Router
-- **Authentication & Session Management:** JWT or cookies and nodemailer
-- **Deployment:** Render.com or similar hosting service
-
-![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)
-![Express.js](https://img.shields.io/badge/Express.js-000000?style=flat&logo=express&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
-![Axios](https://img.shields.io/badge/Axios-5A29E4?style=flat&logo=axios&logoColor=white)
-![React Router](https://img.shields.io/badge/React%20Router-CA4245?style=flat&logo=react-router&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT-000000?style=flat&logo=json-web-tokens&logoColor=white)
-![Nodemailer](https://img.shields.io/badge/Nodemailer-000000?style=flat&logo=nodemailer&logoColor=white)
-
----
-## **Preview**
-### **Dashboard**
- ![GrowTyping](./screenshots/dash4.1.png)
- ![GrowTyping](./screenshots/dash4.2.png)
- ![GrowTyping](./screenshots/dash4.3.png)
-check friend's profile
- ![GrowTyping](./screenshots/friend_stats.png)
-### **Typing Test**
- ![GrowTyping](./screenshots/typing5.o.png)
-### **Profile**
- ![GrowTyping](./screenshots/profile3.0.png)
- ![GrowTyping](./screenshots/profile3.1.png)
-### **Login and Registration**
- ![GrowTyping](./screenshots/login2.0.png)
- ![GrowTyping](./screenshots/regis.png)
+| Layer | Technology |
+| --- | --- |
+| Frontend | React, Vite, Tailwind CSS, Axios |
+| Backend | Node.js, Express |
+| Database | MongoDB with Mongoose |
+| Authentication | JWT-based API authentication |
+| Email | Nodemailer |
 
 
-## **Frontend Details**
-The frontend is designed with a focus on usability and realistic typing experience:
+## Local Setup
 
-### **Components & Structure**
-1. **TypingPage Component**
-   - Handles the entire typing test UI.
-   - Displays text to type, stats, timer, and user information.
-   - Manages key events (typing and backspace).
+### Prerequisites
 
-2. **Word Bank**
-   - Curated array of real English words.
-   - Randomly generates test text for each session.
+- Node.js 20 or later
+- MongoDB database or MongoDB Atlas connection string
 
-3. **Timer**
-   - Starts automatically on the first keystroke.
-   - Counts down based on selected test type.
-   - Stops typing when time ends.
+### 1. Configure and run the backend
 
-4. **Typing Logic**
-   - Tracks correct, incorrect, and total keystrokes.
-   - Penalizes accuracy for corrections.
-   - Highlights correct letters in green, incorrect letters in red.
-   - Thin blinking cursor indicates the current typing position.
+```bash
+cd Backend
+npm install 
+```
 
-5. **Stats Display**
-   - Real-time WPM and accuracy calculation.
-   - Updates dynamically as the user types.
+Create `Backend/.env` with the required values:
 
-6. **UI/UX**
-   - Responsive and modern design using TailwindCSS.
-   - Gradient backgrounds, hover effects, and animated stats.
-   - Focused on readability and minimal distractions for typing practice.
+```env
+PORT=8000
+MONGODB_URI=your_mongodb_connection_string
+DB_NAME=GrowTyping
+ACCESS_TOKEN_SECRET=replace_with_a_secure_secret
+ACCESS_TOKEN_EXPIRY=1d
+REFRESH_TOKEN_SECRET=replace_with_a_secure_secret
+REFRESH_TOKEN_EXPIRY=8d
+FRONTEND_URL=http://localhost:5173
+```
 
-7. **Dashboard Component**
-   - Displays comprehensive typing statistics with date range filtering.
-   - Shows stats by test type, accuracy analysis, weak keys, and typing streaks.
-   - Displays all-time best records for each test type.
+Add SMTP variables only when email verification and password reset emails are required. Then start the API:
 
-8. **Theme System**
-   - 16+ custom themes stored in database and auto-loaded.
-   - Real-time theme switching with database persistence.
-   - Themes include cyberpunk, contrast modes, glass morphism, luxury, and professional designs.
-   - Themes apply to both typing page and dashboard.
+```bash
+npm run dev
+```
 
-9. **Social Features**
-   - **Search Users:** Real-time search with loading spinner, supports username and user ID search.
-   - **Follow/Unfollow:** Add users to following list with dynamic button states.
-   - **Followers/Following Lists:** Manage followers with "Remove" button and following with "Unfollow" button.
-   - **User Stats Modal:** Click on any user to view their complete stats dashboard including sessions, time, WPM, streak, and all-time best records.
-   - **Self-Follow Prevention:** Alert notification prevents users from following themselves.
+### 2. Configure and run the frontend
 
----
+```bash
+cd ../frontend
+npm install
+```
 
-## **Backend Details**
-The backend provides secure and reliable data storage, user management, and typing analytics:
+Create `frontend/.env`:
 
-### **Architecture**
-- **Server:** Express.js REST API running on Node.js
-- **Authentication:** JWT-based authentication with email verification
-- **API Structure:** RESTful endpoints organized by resource (users, stats)
+```env
+VITE_REACT_APP_API=http://localhost:8000/
+```
 
-### **Core Functionality**
-- **User Management:** Registration, login, profile management, theme persistence
-- **Social Features:** Follow/Unfollow, user search, public profiles, followers/following management
-- **Stats Tracking:** Save typing results, calculate WPM/accuracy, track weak keys, maintain streaks
-- **Public APIs:** Public endpoints for user stats and profiles without authentication requirement
+Start the standard client:
 
-### **Database**
-- **MongoDB (Atlas)** - Scalable NoSQL database for user data and typing statistics
-- **User Collection:** Stores authentication, profile information, theme preference, and social relationships
-- **Stats Collection:** Records typing test results with performance metrics (WPM, accuracy, duration, test type)
-- **Relationships:** MongoDB references for efficient data retrieval between users and statistics
+```bash
+npm run dev:5173
+```
 
-### **Key Analytics**
-- WPM calculation based on correct characters typed per minute
-- Accuracy tracking with penalties for corrections
-- Weak key identification to highlight typing difficulties
-- Typing streak maintenance for user engagement
-- Date range filtering for comprehensive statistics analysis
+To run two accounts independently during local development, start a second client in another terminal:
 
----
+```bash
+npm run dev:5174
+```
 
-## **How It Works**
-1. User logs in and accesses the dashboard or typing test page.
-2. User's theme preference is auto-loaded from database.
-3. On dashboard, user can:
-   - View comprehensive typing statistics with date range filtering.
-   - Search for other users by username or ID with real-time results.
-   - View followers and following lists with action buttons.
-   - Click on any user to view their complete stats dashboard.
-   - Follow/Unfollow users (with self-follow prevention).
-   - Remove followers from their followers list.
-   - Change their theme preference (saved to database).
+Open `http://localhost:5173` or `http://localhost:5174` in your browser.
 
-4. For typing tests:
-   - User selects a typing test duration or uses the default/custom test.
-   - Random English text is generated from the word bank.
-   - User begins typing:
-     - Correct characters are highlighted in green.
-     - Incorrect characters are highlighted in red.
-     - Backspacing only removes incorrect characters and deducts accuracy.
-   - The timer counts down, and stats are updated live.
-   - At the end of the test, results are automatically saved to the backend.
-   - Users can review their WPM, accuracy, and weak keys for improvement.
+## Available Scripts
 
-5. Public profile viewing:
-   - Any user can view another user's public profile without authentication.
-   - Profile displays user's stats, followers/following counts, and all-time best records for each test type.
+### Frontend
 
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start Vite on its default port |
+| `npm run dev:5173` | Start the first local frontend instance |
+| `npm run dev:5174` | Start the second local frontend instance |
+| `npm run build` | Create a production build |
 
+### Backend
 
----
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the API with Nodemon |
+| `npm start` | Start the API with Node.js |
 
-## **Setup Instructions**
-### **Frontend**
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/<username>/GrowTyping.git
-   cd GrowTyping/frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file and set your API URL:
-   ```
-   VITE_REACT_APP_API=http://localhost:8000/GrowTyping/v1
-   ```
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+## Usage
 
-### **Backend**
-1. Navigate to backend folder:
-   ```bash
-   cd ../backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Set up environment variables in `.env` (MongoDB URI, JWT secret, etc.).
-4. Start the server:
-   ```bash
-   npm run dev
-   ```
-5. Backend will run on `http://localhost:8000/GrowTyping/v1` by default.
+1. Create and verify an account, then sign in.
+2. Choose a test duration and text mode on the typing page.
+3. Start typing to begin the timer and record live metrics.
+4. Review the dashboard for trend charts, keyboard heatmap, weak keys, and history.
+5. Use Replay from typing history to retake a saved test.
 
----
+## Security Notes
 
-## **Conclusion**
-**GrowTyping** is a comprehensive, user-friendly typing practice tool that combines live performance analytics with a realistic typing experience. It is perfect for users looking to improve their typing speed and accuracy while tracking detailed stats over time.
-
----
-
+- Do not commit `.env` files, database connection strings, SMTP credentials, or JWT secrets.
+- Use strong secrets and secure HTTPS settings for production deployments.

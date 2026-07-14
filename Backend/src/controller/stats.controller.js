@@ -75,9 +75,11 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
         duration,
         charactersTyped,
         testType,
+        testText,
         correctChars,
         incorrectChars,
-        weakKeys
+        weakKeys,
+        keyStats
     } = req.body;
 
     if(
@@ -89,10 +91,35 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
     ){
         throw new ApiError(400, "All required fields must be provided");
     }
-    const normalizedWeakKeys = (weakKeys || []).map(k => ({
-        key: k.key,
-        mistakeCount: k.mistakeCount ?? 1
-    }));
+    const normalizeKey = (key) =>
+        typeof key === "string" && /^[a-z]$/i.test(key) ? key.toLowerCase() : null;
+    const toNonNegativeInteger = (value) =>
+        Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
+
+    const normalizedWeakKeys = (Array.isArray(weakKeys) ? weakKeys : [])
+        .map((keyStat) => ({
+            key: normalizeKey(keyStat.key),
+            mistakeCount: toNonNegativeInteger(
+                keyStat.mistakeCount ?? keyStat.count ?? 1
+            )
+        }))
+        .filter((keyStat) => keyStat.key && keyStat.mistakeCount > 0);
+
+    const normalizedKeyStats = (Array.isArray(keyStats) ? keyStats : [])
+        .map((keyStat) => ({
+            key: normalizeKey(keyStat.key),
+            attempts: toNonNegativeInteger(keyStat.attempts),
+            mistakeCount: toNonNegativeInteger(keyStat.mistakeCount)
+        }))
+        .filter(
+            (keyStat) =>
+                keyStat.key &&
+                keyStat.attempts > 0 &&
+                keyStat.mistakeCount <= keyStat.attempts
+        );
+
+    const normalizedTestText =
+        typeof testText === "string" ? testText.slice(0, 10000) : undefined;
 
     const stat = await TypingStat.create({
         user: userId,
@@ -101,9 +128,11 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
         duration,
         charactersTyped,
         testType,
+        testText: normalizedTestText,
         correctChars,
         incorrectChars,
-        weakKeys: normalizedWeakKeys
+        weakKeys: normalizedWeakKeys,
+        keyStats: normalizedKeyStats
     });
     console.log("Saved stat:", stat);
     return res.status(201).json(
@@ -209,6 +238,62 @@ const getTopWeakKeys = asyncHandler(async(req, res) =>{
         .json(new ApiResponse(200, weakKeys, "Top weak keys fetched"));
 });
 
+const getKeyboardHeatmap = asyncHandler(async (req, res) => {
+    const userId = new mongoose.Types.ObjectId(req.user?._id);
+    const dateMatch = getDateMatch(req.query.range);
+
+    const keyStats = await TypingStat.aggregate([
+        { $match: { user: userId, ...dateMatch } },
+        {
+            $project: {
+                keyStats: {
+                    $cond: [
+                        { $gt: [{ $size: { $ifNull: ["$keyStats", []] } }, 0] },
+                        "$keyStats",
+                        { $ifNull: ["$weakKeys", []] }
+                    ]
+                }
+            }
+        },
+        { $unwind: "$keyStats" },
+        {
+            $project: {
+                key: { $toLower: "$keyStats.key" },
+                attempts: { $ifNull: ["$keyStats.attempts", 0] },
+                mistakes: {
+                    $ifNull: [
+                        "$keyStats.mistakeCount",
+                        { $ifNull: ["$keyStats.count", 1] }
+                    ]
+                }
+            }
+        },
+        { $match: { key: { $regex: "^[a-z]$" } } },
+        {
+            $group: {
+                _id: "$key",
+                attempts: { $sum: "$attempts" },
+                mistakes: { $sum: "$mistakes" }
+            }
+        },
+        { $sort: { _id: 1 } }
+    ]);
+
+    const heatmap = keyStats.map((keyStat) => ({
+        key: keyStat._id,
+        attempts: keyStat.attempts,
+        mistakes: keyStat.mistakes,
+        errorRate:
+            keyStat.attempts > 0
+                ? Number(((keyStat.mistakes / keyStat.attempts) * 100).toFixed(1))
+                : null
+    }));
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, heatmap, "Keyboard heatmap fetched"));
+});
+
 const getTypingStreak = asyncHandler(async(req, res) =>{
     const userId = new mongoose.Types.ObjectId(req.user?._id);
 
@@ -247,15 +332,55 @@ const getTypingStreak = asyncHandler(async(req, res) =>{
 
 const getTypingHistory = asyncHandler(async(req, res) =>{
     const dateMatch = getDateMatch(req.query.range);
-
-    const stats = await TypingStat.find({
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
+    const query = {
         user: req.user?._id,
         ...dateMatch
-    }).sort({ createdAt: -1 });
+    };
+
+    const [stats, totalRecords, bestRecords] = await Promise.all([
+        TypingStat.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit),
+        TypingStat.countDocuments(query),
+        TypingStat.aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: "$testType",
+                    highestWpm: { $max: "$wpm" },
+                    highestAccuracy: { $max: "$accuracy" },
+                    longestDuration: { $max: "$duration" }
+                }
+            }
+        ])
+    ]);
+
+    const bestRecordsByType = Object.fromEntries(
+        bestRecords.map((record) => [
+            record._id,
+            {
+                highestWpm: record.highestWpm,
+                highestAccuracy: record.highestAccuracy,
+                longestDuration: record.longestDuration
+            }
+        ])
+    );
 
     return res
         .status(200)
-        .json(new ApiResponse(200, stats, "Typing history fetched"));
+        .json(new ApiResponse(200, {
+            items: stats,
+            bestRecords: bestRecordsByType,
+            pagination: {
+                page,
+                limit,
+                totalRecords,
+                hasMore: page * limit < totalRecords
+            }
+        }, "Typing history fetched"));
 });
 
 const getAverageAccuracyByType = asyncHandler(async (req, res) => {
@@ -396,6 +521,7 @@ export{
     getAverageWpmByType,
     getDailyProgress,
     getTopWeakKeys,
+    getKeyboardHeatmap,
     getTypingStreak,
     getTypingHistory,
     getAverageAccuracyByType,

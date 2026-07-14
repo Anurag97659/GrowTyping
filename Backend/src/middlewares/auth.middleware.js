@@ -8,7 +8,7 @@ dotenv.config({
 });
 export const verifyJWT=asyncHandler(async(req,_,next)=>{
     try{
-        const token =req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+        const token = req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.accessToken;
          if(!token){throw new ApiError(401,"unauthorized");}
         const decodedtoken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await User.findById(decodedtoken?._id).select("-password -refreshToken")
@@ -21,7 +21,9 @@ export const verifyJWT=asyncHandler(async(req,_,next)=>{
 });
 export const optionalVerifyJWT = async (req, _, next) => {
   try {
-    const token = req.cookies?.accessToken;
+    const token =
+      req.header("Authorization")?.replace("Bearer ", "") ||
+      req.cookies?.accessToken;
     if (!token) return next();
 
     const decoded = jwt.verify(

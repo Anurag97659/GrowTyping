@@ -1,16 +1,11 @@
 import React,{ useState } from "react";
-import axios from "axios";
+import api from "../lib/api";
 
 function ChangePassword(){
   const[oldPassword,setoldpassword] = useState('');
   const[newPassword,setnewpassword] = useState('');
   const[confirmPassword,setconfirmpassword] = useState('');
   
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-    withCredentials: true,
-  });
-
   const submit = async (e) => {
     e.preventDefault();
     if(newPassword !== confirmPassword){

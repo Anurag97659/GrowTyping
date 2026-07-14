@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import axios from "axios";
+import api from "../lib/api";
 
 function Registration() {
   const [email, setEmail] = useState("");
@@ -10,11 +10,6 @@ function Registration() {
   const [username, setUsername] = useState("");
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const api = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-    withCredentials: true,
-  });
 
   const submit = async (e) => {
     e.preventDefault();

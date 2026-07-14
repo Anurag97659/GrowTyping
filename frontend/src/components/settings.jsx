@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api, { clearAccessToken } from "../lib/api";
 import { FiEdit, FiKey, FiTrash2, FiLogOut } from "react-icons/fi";
 
 const Profile = () => {
@@ -12,11 +12,6 @@ const Profile = () => {
         joined: "",
     });
     const [loading, setLoading] = useState(true);
-
-    const api = axios.create({
-        baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-        withCredentials: true,
-    });
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -48,6 +43,7 @@ const Profile = () => {
         if (!confirmed) return;
         try {
             await api.post("GrowTyping/v1/users/deleteuser");
+            clearAccessToken();
             alert("Your account has been deleted.");
             window.location.href = "/";
         } catch (err) {
@@ -59,6 +55,7 @@ const Profile = () => {
     const handleLogout = async () => {
         try {
             await api.post("GrowTyping/v1/users/logout");
+            clearAccessToken();
             alert("Logged out successfully.");
             window.location.href = "/login";
         } catch (err) {

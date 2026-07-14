@@ -1,3 +1,13 @@
+<<<<<<< HEAD
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+=======
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
@@ -174,3 +184,4 @@ yarn-error.log*
 //.vscode
 ./.vscode/*
 !.vscode/settings.json
+>>>>>>> 451c087 (admin)

@@ -1,6 +1,6 @@
 import React,{ useEffect, useState } from "react";
 import{ Link, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 
 function VerifyEmail(){
   const [searchParams] = useSearchParams();
@@ -19,11 +19,6 @@ function VerifyEmail(){
       }
 
       try{
-        const api = axios.create({
-          baseURL: import.meta.env.VITE_REACT_APP_API || "http://localhost:8000/",
-          withCredentials: true,
-        });
-
         const response = await api.get("GrowTyping/v1/users/verify-email",{
           params:{ token, id },
         });

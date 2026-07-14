@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:5173": "vite --port 5173",
+    "dev:5174": "vite --port 5174",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -17,12 +19,13 @@
   "dependencies": {
     "axios": "^1.13.4",
     "dotenv": "^17.2.4",
-    "framer-motion": "^12.33.0",
+    "framer-motion": "^12.38.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.13.0",
     "react-scripts": "^5.0.1",
+    "stylex": "^0.3.0",
     "web-vitals": "^2.1.4"
   }
 }
