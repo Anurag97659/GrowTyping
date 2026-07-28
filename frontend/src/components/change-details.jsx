@@ -22,7 +22,7 @@ function ChangeDetails(){
         alert(res.data.error);
       } else {
         alert("Details changed successfully");
-        window.location.href = "/login";
+        window.location.href = "/settings";
       }
     } catch (error) {
       alert("Details change failed: " + error.message);

@@ -37,6 +37,10 @@ const Profile = () => {
     }, []);
 
     const handleDeleteUser = async () => {
+        if (profile.username.toLowerCase() === "avasanam") {
+            alert("Account deletion is disabled for this user.");
+            return;
+        }else{
         const confirmed = window.confirm(
             "Are you sure you want to delete your account? This action cannot be undone."
         );
@@ -49,7 +53,7 @@ const Profile = () => {
         } catch (err) {
             console.error("Error deleting account:", err);
             alert("Failed to delete account. Please try again.");
-        }
+        }}
     };
 
     const handleLogout = async () => {

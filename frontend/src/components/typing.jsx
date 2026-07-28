@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
-
+import { FaGithub } from "react-icons/fa";
 const WORDS = [
   // ============================================================
   // BASIC GRAMMAR
@@ -976,7 +976,9 @@ export default function TypingPage() {
       <div className="w-full bg-slate-950/40 border-b border-slate-800 py-6">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex flex-col gap-1">
-            <h1 className={`text-3xl md:text-4xl font-bold tracking-tight text-${currentTheme.primary}-400`}>
+            <h1
+              className={`text-3xl md:text-4xl font-bold tracking-tight text-${currentTheme.primary}-400`}
+            >
               GrowTyping
             </h1>
             <p className="text-xs md:text-sm text-slate-400 tracking-widest uppercase">
@@ -1000,7 +1002,9 @@ export default function TypingPage() {
               ))}
             </div>
             <div className="relative">
-              <label htmlFor="text-mode" className="sr-only">Typing text mode</label>
+              <label htmlFor="text-mode" className="sr-only">
+                Typing text mode
+              </label>
               <select
                 id="text-mode"
                 value={textMode}
@@ -1008,12 +1012,24 @@ export default function TypingPage() {
                 className="px-3 py-1.5 text-sm rounded bg-slate-800 text-slate-200 border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors"
                 title="Typing text mode"
               >
-                <option value="normal" className="bg-slate-900 text-slate-100">Normal</option>
-                <option value="punctuation" className="bg-slate-900 text-slate-100">Punctuation</option>
-                <option value="numbers" className="bg-slate-900 text-slate-100">Numbers</option>
-                <option value="symbols" className="bg-slate-900 text-slate-100">Symbols</option>
-                <option value="all" className="bg-slate-900 text-slate-100">All</option>
-
+                <option value="normal" className="bg-slate-900 text-slate-100">
+                  Normal
+                </option>
+                <option
+                  value="punctuation"
+                  className="bg-slate-900 text-slate-100"
+                >
+                  Punctuation
+                </option>
+                <option value="numbers" className="bg-slate-900 text-slate-100">
+                  Numbers
+                </option>
+                <option value="symbols" className="bg-slate-900 text-slate-100">
+                  Symbols
+                </option>
+                <option value="all" className="bg-slate-900 text-slate-100">
+                  All
+                </option>
               </select>
             </div>
             <div className="relative">
@@ -1023,7 +1039,11 @@ export default function TypingPage() {
                 className="px-3 py-1.5 text-sm rounded bg-slate-800 text-slate-200 border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors"
               >
                 {Object.keys(themes).map((t) => (
-                  <option key={t} value={t} className="bg-slate-900 text-slate-100">
+                  <option
+                    key={t}
+                    value={t}
+                    className="bg-slate-900 text-slate-100"
+                  >
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </option>
                 ))}
@@ -1036,7 +1056,7 @@ export default function TypingPage() {
               className={`px-5 py-2.5 text-sm font-bold text-${currentTheme.primary}-400 bg-slate-800/60 border border-${currentTheme.primary}-500/40 rounded-lg hover:bg-slate-700 hover:border-${currentTheme.primary}-400/70 transition-all duration-200 shadow-lg hover:shadow-${currentTheme.primary}-500/30`}
               title={username}
             >
-               {username}
+              {username}
             </button>
           </div>
         </div>
@@ -1064,7 +1084,10 @@ export default function TypingPage() {
           const totalLines = Math.ceil(text.length / charsPerLine);
           const currentLineIndex = Math.floor(typedChars.length / charsPerLine);
           // Always show 3 lines when possible, with current line in the middle
-          const startLine = Math.max(0, Math.min(currentLineIndex - 1, totalLines - 3));
+          const startLine = Math.max(
+            0,
+            Math.min(currentLineIndex - 1, totalLines - 3),
+          );
           const endLine = Math.min(totalLines, startLine + 3);
           const lines = [];
           for (let lineIdx = startLine; lineIdx < endLine; lineIdx++) {
@@ -1073,9 +1096,12 @@ export default function TypingPage() {
             const lineText = text.slice(lineStart, lineEnd);
             const isCurrentLine = lineIdx === currentLineIndex;
             lines.push(
-              <div key={lineIdx} className={`whitespace-pre text-left transition-opacity duration-200 ${
-                isCurrentLine ? "opacity-100" : "opacity-50"
-              }`}>
+              <div
+                key={lineIdx}
+                className={`whitespace-pre text-left transition-opacity duration-200 ${
+                  isCurrentLine ? "opacity-100" : "opacity-50"
+                }`}
+              >
                 {lineText.split("").map((char, i) => {
                   const charIdx = lineStart + i;
 
@@ -1117,116 +1143,194 @@ export default function TypingPage() {
           return lines;
         })()}
       </div>
-        <button
-            onClick={resetTest}
-            className={`px-6 py-2 ${currentTheme.button} rounded-lg hover:bg-opacity-80 transition-all duration-200`}
-          >
-            Reset
-          </button>
+      <button
+        onClick={resetTest}
+        className={`px-6 py-2 ${currentTheme.button} rounded-lg hover:bg-opacity-80 transition-all duration-200`}
+      >
+        Reset
+      </button>
       <p
-        className={`text-${currentTheme.primary}-500 mt-auto pt-16 pb-8 text-sm tracking-wide text-center`}
+        className={`text-${currentTheme.primary}-500 mt-auto pt-16 pb-2 text-sm tracking-wide text-center`}
       >
         Start typing to begin • Press Escape to reset
       </p>
+      <a
+        href="https://github.com/Anurag97659/GrowTyping"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`flex items-center gap-2 text-${currentTheme.primary}-500 mb-5 hover:text-white transition-colors duration-200`}
+      >
+        <FaGithub className="text-lg " />
+        <span className="text-sm  tracking-wide">GitHub</span>
+      </a>
 
       {finishedRef.current && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div
             className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-${currentTheme.primary}-500/30 rounded-3xl max-w-2xl w-full mx-auto shadow-2xl overflow-hidden`}
           >
-          
-            <div className={`bg-gradient-to-r from-${currentTheme.primary}-600/20 to-${currentTheme.primary}-500/10 border-b border-${currentTheme.primary}-500/20 px-8 py-8`}>
+            <div
+              className={`bg-gradient-to-r from-${currentTheme.primary}-600/20 to-${currentTheme.primary}-500/10 border-b border-${currentTheme.primary}-500/20 px-8 py-8`}
+            >
               <div className="text-center mb-2">
-                <p className={`text-${currentTheme.primary}-400 text-sm font-semibold uppercase tracking-widest mb-3`}>
-                  {correctRef.current / totalRef.current > 0.95 ? "⭐ Exceptional Performance!" 
-                   : correctRef.current / totalRef.current > 0.85 ? "✓ Great Job!" 
-                   : correctRef.current / totalRef.current > 0.75 ? "Good Result" 
-                   : "Room for Improvement"}
+                <p
+                  className={`text-${currentTheme.primary}-400 text-sm font-semibold uppercase tracking-widest mb-3`}
+                >
+                  {correctRef.current / totalRef.current > 0.95
+                    ? "⭐ Exceptional Performance!"
+                    : correctRef.current / totalRef.current > 0.85
+                      ? "✓ Great Job!"
+                      : correctRef.current / totalRef.current > 0.75
+                        ? "Good Result"
+                        : "Room for Improvement"}
                 </p>
               </div>
-              <h2 className={`text-4xl font-bold ${currentTheme.text} text-center`}>
+              <h2
+                className={`text-4xl font-bold ${currentTheme.text} text-center`}
+              >
                 Test Completed
               </h2>
-              <div className={`h-1 w-12 bg-gradient-to-r from-${currentTheme.primary}-500 to-${currentTheme.primary}-400 mx-auto mt-4 rounded-full`}></div>
+              <div
+                className={`h-1 w-12 bg-gradient-to-r from-${currentTheme.primary}-500 to-${currentTheme.primary}-400 mx-auto mt-4 rounded-full`}
+              ></div>
             </div>
 
-            
             <div className="px-8 py-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className={`bg-slate-800/60 hover:bg-slate-800/80 border border-${currentTheme.primary}-500/30 rounded-2xl p-6 transition-all duration-200 group`}>
+                <div
+                  className={`bg-slate-800/60 hover:bg-slate-800/80 border border-${currentTheme.primary}-500/30 rounded-2xl p-6 transition-all duration-200 group`}
+                >
                   <div className="flex items-center justify-between mb-3">
-                    <p className={`text-${currentTheme.primary}-400 text-xs font-bold uppercase tracking-widest`}>
+                    <p
+                      className={`text-${currentTheme.primary}-400 text-xs font-bold uppercase tracking-widest`}
+                    >
                       Words Per Minute
                     </p>
-                    
                   </div>
-                  <p className={`text-5xl font-black ${currentTheme.text} mb-2`}>
-                    {Math.round(correctRef.current / 5 / (finalDurationRef.current / 60))}
+                  <p
+                    className={`text-5xl font-black ${currentTheme.text} mb-2`}
+                  >
+                    {Math.round(
+                      correctRef.current / 5 / (finalDurationRef.current / 60),
+                    )}
                   </p>
                   <div className="w-full bg-slate-700/40 h-1.5 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full bg-gradient-to-r from-${currentTheme.primary}-500 to-${currentTheme.primary}-400 transition-all duration-500`}
-                      style={{ width: `${Math.min(100, (Math.round(correctRef.current / 5 / (finalDurationRef.current / 60)) / 100) * 100)}%` }}
+                      style={{
+                        width: `${Math.min(100, (Math.round(correctRef.current / 5 / (finalDurationRef.current / 60)) / 100) * 100)}%`,
+                      }}
                     ></div>
                   </div>
                 </div>
 
-                <div className={`bg-slate-800/60 hover:bg-slate-800/80 border ${((correctRef.current / totalRef.current) * 100) > 90 ? `border-green-500/30` : `border-${currentTheme.primary}-500/30`} rounded-2xl p-6 transition-all duration-200 group`}>
+                <div
+                  className={`bg-slate-800/60 hover:bg-slate-800/80 border ${(correctRef.current / totalRef.current) * 100 > 90 ? `border-green-500/30` : `border-${currentTheme.primary}-500/30`} rounded-2xl p-6 transition-all duration-200 group`}
+                >
                   <div className="flex items-center justify-between mb-3">
-                    <p className={`${((correctRef.current / totalRef.current) * 100) > 90 ? `text-green-400` : `text-${currentTheme.primary}-400`} text-xs font-bold uppercase tracking-widest`}>
+                    <p
+                      className={`${(correctRef.current / totalRef.current) * 100 > 90 ? `text-green-400` : `text-${currentTheme.primary}-400`} text-xs font-bold uppercase tracking-widest`}
+                    >
                       Accuracy
                     </p>
                   </div>
-                  <p className={`${((correctRef.current / totalRef.current) * 100) > 90 ? `text-green-400` : `text-${currentTheme.primary}-400`} text-5xl font-black mb-2`}>
-                    {((correctRef.current / totalRef.current) * 100).toFixed(1)}%
+                  <p
+                    className={`${(correctRef.current / totalRef.current) * 100 > 90 ? `text-green-400` : `text-${currentTheme.primary}-400`} text-5xl font-black mb-2`}
+                  >
+                    {((correctRef.current / totalRef.current) * 100).toFixed(1)}
+                    %
                   </p>
                   <div className="w-full bg-slate-700/40 h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${((correctRef.current / totalRef.current) * 100) > 90 ? `bg-gradient-to-r from-green-500 to-green-400` : `bg-gradient-to-r from-${currentTheme.primary}-500 to-${currentTheme.primary}-400`} transition-all duration-500`}
-                      style={{ width: `${((correctRef.current / totalRef.current) * 100)}%` }}
+                    <div
+                      className={`h-full ${(correctRef.current / totalRef.current) * 100 > 90 ? `bg-gradient-to-r from-green-500 to-green-400` : `bg-gradient-to-r from-${currentTheme.primary}-500 to-${currentTheme.primary}-400`} transition-all duration-500`}
+                      style={{
+                        width: `${(correctRef.current / totalRef.current) * 100}%`,
+                      }}
                     ></div>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      
-                <div className={`bg-slate-800/40 border border-green-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}>
-                  <p className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">Correct</p>
-                  <p className="text-green-400 text-3xl font-bold">{correctRef.current}</p>
+                <div
+                  className={`bg-slate-800/40 border border-green-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}
+                >
+                  <p className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                    Correct
+                  </p>
+                  <p className="text-green-400 text-3xl font-bold">
+                    {correctRef.current}
+                  </p>
                   <p className="text-slate-500 text-xs mt-1">characters</p>
                 </div>
-                <div className={`bg-slate-800/40 border border-red-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}>
-                  <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">Mistakes</p>
-                  <p className="text-red-400 text-3xl font-bold">{incorrectRef.current}</p>
+                <div
+                  className={`bg-slate-800/40 border border-red-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}
+                >
+                  <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                    Mistakes
+                  </p>
+                  <p className="text-red-400 text-3xl font-bold">
+                    {incorrectRef.current}
+                  </p>
                   <p className="text-slate-500 text-xs mt-1">errors</p>
                 </div>
-                <div className={`bg-slate-800/40 border border-${currentTheme.primary}-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}>
-                  <p className={`text-${currentTheme.primary}-400 text-xs font-semibold uppercase tracking-wider mb-2`}>Duration</p>
-                  <p className={`text-${currentTheme.primary}-400 text-3xl font-bold`}>
+                <div
+                  className={`bg-slate-800/40 border border-${currentTheme.primary}-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}
+                >
+                  <p
+                    className={`text-${currentTheme.primary}-400 text-xs font-semibold uppercase tracking-wider mb-2`}
+                  >
+                    Duration
+                  </p>
+                  <p
+                    className={`text-${currentTheme.primary}-400 text-3xl font-bold`}
+                  >
                     {finalDurationRef.current}s
                   </p>
                   <p className="text-slate-500 text-xs mt-1">seconds</p>
                 </div>
-                <div className={`bg-slate-800/40 border border-${currentTheme.primary}-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}>
-                  <p className={`text-${currentTheme.primary}-400 text-xs font-semibold uppercase tracking-wider mb-2`}>Total</p>
-                  <p className={`text-${currentTheme.primary}-400 text-3xl font-bold`}>{totalRef.current}</p>
+                <div
+                  className={`bg-slate-800/40 border border-${currentTheme.primary}-500/30 rounded-xl p-4 text-center hover:bg-slate-800/60 transition-all`}
+                >
+                  <p
+                    className={`text-${currentTheme.primary}-400 text-xs font-semibold uppercase tracking-wider mb-2`}
+                  >
+                    Total
+                  </p>
+                  <p
+                    className={`text-${currentTheme.primary}-400 text-3xl font-bold`}
+                  >
+                    {totalRef.current}
+                  </p>
                   <p className="text-slate-500 text-xs mt-1">total keys</p>
                 </div>
               </div>
               <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-5 mb-8">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Performance Breakdown</p>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
+                  Performance Breakdown
+                </p>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-300">Accuracy Rate</span>
-                    <span className={`font-bold ${((correctRef.current / totalRef.current) * 100) > 90 ? `text-green-400` : `text-${currentTheme.primary}-400`}`}>
-                      {((correctRef.current / totalRef.current) * 100).toFixed(1)}%
+                    <span
+                      className={`font-bold ${(correctRef.current / totalRef.current) * 100 > 90 ? `text-green-400` : `text-${currentTheme.primary}-400`}`}
+                    >
+                      {((correctRef.current / totalRef.current) * 100).toFixed(
+                        1,
+                      )}
+                      %
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-300">Error Rate</span>
-                    <span className={`font-bold ${((incorrectRef.current / totalRef.current) * 100) > 10 ? `text-red-400` : `text-green-400`}`}>
-                      {((incorrectRef.current / totalRef.current) * 100).toFixed(1)}%
+                    <span
+                      className={`font-bold ${(incorrectRef.current / totalRef.current) * 100 > 10 ? `text-red-400` : `text-green-400`}`}
+                    >
+                      {(
+                        (incorrectRef.current / totalRef.current) *
+                        100
+                      ).toFixed(1)}
+                      %
                     </span>
                   </div>
                 </div>

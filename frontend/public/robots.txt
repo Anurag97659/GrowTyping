@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /edit-profile
+Disallow: /change-password
+Disallow: /verify-email
+
+Sitemap: https://growtyping-1.onrender.com/sitemap.xml

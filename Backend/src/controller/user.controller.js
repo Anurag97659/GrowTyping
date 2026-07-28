@@ -56,7 +56,7 @@ const registeruser = asyncHandler(async (req, res) => {
     await user.save();
 
     const clientUrl =
-        process.env.FRONTEND_URL || process.env.API || "http://localhost:5173";
+        process.env.FRONTEND_URL || "http://localhost:5173";
     const verificationUrl = `${clientUrl}/verify-email?token=${rawToken}&id=${user._id}`;
 
     let mailSent = false;
@@ -287,6 +287,10 @@ const deleteUser=asyncHandler(async(req,res)=>{
     if(!user){
         throw new ApiError(404,"User not found");
    }
+    if (user.username?.toLowerCase() === "avasanam") {
+        throw new ApiError(403, "Account deletion is disabled for this user.");
+    }
+    await User.findByIdAndDelete(user._id);
     return res
         .status(200)
         .json(
