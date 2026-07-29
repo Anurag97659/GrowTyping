@@ -8,6 +8,8 @@ import Settings from "./components/settings";
 import ChangeDetails from "./components/change-details";
 import ChangePassword from "./components/change-password";
 import VerifyEmail from "./components/verify-email";
+import Friends from "./components/friends";
+import Leaderboard from "./components/leaderboard";
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/edit-profile" element={<ChangeDetails />} />
         <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/friends" element={<Friends />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Routes>
     </Router>
   );

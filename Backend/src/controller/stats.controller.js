@@ -514,8 +514,56 @@ const getUserTypingStreak = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, { streak }, "User streak fetched"));
 });
 
-     
-export{
+const getLeaderboard = asyncHandler(async (req, res) => {
+    const { range, testType } = req.query;
+    const dateMatch = getDateMatch(range);
+
+    const matchQuery = { ...dateMatch };
+    if (testType && testType !== "all") {
+        matchQuery.testType = testType;
+    }
+
+    const leaderboard = await TypingStat.aggregate([
+        { $match: matchQuery },
+        {
+            $group: {
+                _id: "$user",
+                highestWpm: { $max: "$wpm" },
+                avgWpm: { $avg: "$wpm" },
+                avgAccuracy: { $avg: "$accuracy" },
+                totalTests: { $sum: 1 }
+            }
+        },
+        { $sort: { highestWpm: -1, avgAccuracy: -1 } },
+        { $limit: 100 },
+        {
+            $lookup: {
+                from: "users",
+                localField: "_id",
+                foreignField: "_id",
+                as: "userDoc"
+            }
+        },
+        { $unwind: "$userDoc" },
+        {
+            $project: {
+                _id: 1,
+                username: "$userDoc.username",
+                fullname: "$userDoc.fullname",
+                highestWpm: 1,
+                avgWpm: 1,
+                avgAccuracy: 1,
+                totalTests: 1
+            }
+        }
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(200, leaderboard, "Leaderboard fetched successfully")
+    );
+});
+
+export {
     saveTypingStat,
     getDashboardStats,
     getAverageWpmByType,
@@ -527,5 +575,6 @@ export{
     getAverageAccuracyByType,
     getUserPublicStats,
     getUserBestRecords,
-    getUserTypingStreak
+    getUserTypingStreak,
+    getLeaderboard
 };

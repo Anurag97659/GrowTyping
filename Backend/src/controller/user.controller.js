@@ -347,7 +347,7 @@ const followUser=asyncHandler(async(req,res)=>{
    }
     
     if(userIdToFollow === req.user?._id.toString()){
-        throw new ApiError(400,"You cannot follow yourself");
+        throw new ApiError(400,"You cannot add yourself as a friend");
    }
 
     const userToFollow=await User.findById(userIdToFollow);
@@ -358,18 +358,24 @@ const followUser=asyncHandler(async(req,res)=>{
     const currentUser=await User.findById(req.user?._id);
     if(!currentUser.following.includes(userIdToFollow)){
         currentUser.following.push(userIdToFollow);
-        await currentUser.save();
    }
+    if(!currentUser.followers.includes(userIdToFollow)){
+        currentUser.followers.push(userIdToFollow);
+   }
+    await currentUser.save();
 
+    if(!userToFollow.following.includes(req.user?._id)){
+        userToFollow.following.push(req.user?._id);
+   }
     if(!userToFollow.followers.includes(req.user?._id)){
         userToFollow.followers.push(req.user?._id);
-        await userToFollow.save();
    }
+    await userToFollow.save();
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200,{},"User followed successfully")
+            new ApiResponse(200,{},"Friend added successfully")
         );
 });
 
@@ -386,15 +392,38 @@ const unfollowUser=asyncHandler(async(req,res)=>{
 
     const currentUser=await User.findById(req.user?._id);
     currentUser.following=currentUser.following.filter(id => id.toString() !== userIdToUnfollow);
+    currentUser.followers=currentUser.followers.filter(id => id.toString() !== userIdToUnfollow);
     await currentUser.save();
 
+    userToUnfollow.following=userToUnfollow.following.filter(id => id.toString() !== req.user?._id.toString());
     userToUnfollow.followers=userToUnfollow.followers.filter(id => id.toString() !== req.user?._id.toString());
     await userToUnfollow.save();
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200,{},"User unfollowed successfully")
+            new ApiResponse(200,{},"Friend removed successfully")
+        );
+});
+
+const getFriends=asyncHandler(async(req,res)=>{
+    const user=await User.findById(req.user?._id)
+        .populate('following', 'username fullname')
+        .populate('followers', 'username fullname');
+    if(!user){
+        throw new ApiError(404,"User not found");
+   }
+    const friendMap=new Map();
+    [...(user.following || []), ...(user.followers || [])].forEach(f => {
+        if(f && f._id && f._id.toString() !== user._id.toString()){
+            friendMap.set(f._id.toString(), f);
+        }
+    });
+    const friends=Array.from(friendMap.values());
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200,friends,"Friends fetched successfully")
         );
 });
 
@@ -549,5 +578,5 @@ const forgotPassword = asyncHandler(async(req, res) => {
 export {registeruser, refreshAccessToken,
      loginuser, logoutuser, changeCurrentPassword, 
     deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme, 
-    followUser, unfollowUser, getFollowers, getFollowing, getUserPublicProfile, searchUsers, removeFollower, forgotPassword
+    followUser, unfollowUser, getFollowers, getFollowing, getFriends, getUserPublicProfile, searchUsers, removeFollower, forgotPassword
     };

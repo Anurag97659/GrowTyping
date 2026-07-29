@@ -16,6 +16,7 @@ import {
   unfollowUser,
   getFollowers,
   getFollowing,
+  getFriends,
   getUserPublicProfile,
   searchUsers,
   removeFollower,
@@ -40,6 +41,7 @@ router.route('/unfollow').post(verifyJWT, unfollowUser);
 router.route('/remove-follower').post(verifyJWT, removeFollower);
 router.route('/followers').get(verifyJWT, getFollowers);
 router.route('/following').get(verifyJWT, getFollowing);
+router.route('/friends').get(verifyJWT, getFriends);
 router.route('/search').get(searchUsers);
 router.route('/public-profile/:username').get(getUserPublicProfile);
 router.get("/me", optionalVerifyJWT, (req, res) => {

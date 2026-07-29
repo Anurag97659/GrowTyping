@@ -1049,15 +1049,45 @@ export default function TypingPage() {
                 ))}
               </select>
             </div>
-            <button
-              onClick={() =>
-                loggedIn ? navigate("/dashboard") : navigate("/login")
-              }
-              className={`px-5 py-2.5 text-sm font-bold text-${currentTheme.primary}-400 bg-slate-800/60 border border-${currentTheme.primary}-500/40 rounded-lg hover:bg-slate-700 hover:border-${currentTheme.primary}-400/70 transition-all duration-200 shadow-lg hover:shadow-${currentTheme.primary}-500/30`}
-              title={username}
-            >
-              {username}
-            </button>
+            <div className="relative group">
+              <button
+                onClick={() =>
+                  loggedIn ? navigate("/dashboard") : navigate("/login")
+                }
+                className={`px-5 py-2.5 text-sm font-bold text-${currentTheme.primary}-400 bg-slate-800/60 border border-${currentTheme.primary}-500/40 rounded-lg hover:bg-slate-700 hover:border-${currentTheme.primary}-400/70 transition-all duration-200 shadow-lg hover:shadow-${currentTheme.primary}-500/30 flex items-center gap-1.5`}
+                title={username}
+              >
+                <span>{username}</span>
+                <span className="text-xs opacity-60 transition-transform duration-200 group-hover:rotate-180">▼</span>
+              </button>
+              
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-1.5">
+                <button
+                  onClick={() => navigate(loggedIn ? "/dashboard" : "/login")}
+                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-base"></span> Dashboard
+                </button>
+                <button
+                  onClick={() => navigate(loggedIn ? "/settings" : "/login")}
+                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-base"></span> Profile (Settings)
+                </button>
+                <button
+                  onClick={() => navigate("/friends")}
+                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-base"></span> Friends
+                </button>
+                <button
+                  onClick={() => navigate("/leaderboard")}
+                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-base"></span> Leaderboard
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ const connectDatabase=async ()=>{
         console.log(`\n Connected to database(chill man)✔️✔️ DB HOST:${connectionToDB.connection.host}`);
     
     } catch (error) {
-        console.error("mongo db connection problem in ds.js file (this shit is real!!!!!!!❌❌❌❌)")
+        console.error("mongo db connection problem in db.js file (this shit is real!!!!!!!❌❌❌❌)")
         throw error;
     }
 }

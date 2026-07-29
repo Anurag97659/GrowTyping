@@ -12,7 +12,8 @@ import {
     getAverageAccuracyByType,
     getUserPublicStats,
     getUserBestRecords,
-    getUserTypingStreak
+    getUserTypingStreak,
+    getLeaderboard
 } from "../controller/stats.controller.js";
 
 const router = Router();
@@ -27,6 +28,7 @@ router.route("/keyboard-heatmap").get(verifyJWT, getKeyboardHeatmap);
 router.route("/streak").get(verifyJWT, getTypingStreak);
 router.route("/history").get(verifyJWT, getTypingHistory);
 router.route("/average-accuracy").get(verifyJWT, getAverageAccuracyByType);
+router.route("/leaderboard").get(getLeaderboard);
 
 router.route("/public/:userId").get(getUserPublicStats);
 router.route("/public-best/:userId").get(getUserBestRecords);
