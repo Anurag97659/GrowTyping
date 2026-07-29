@@ -1,102 +1,151 @@
-import React,{ useState } from "react";
+import React, { useState } from "react";
 import api from "../lib/api";
+import { FiArrowLeft } from "react-icons/fi";
 
-function ChangePassword(){
-  const[oldPassword,setoldpassword] = useState('');
-  const[newPassword,setnewpassword] = useState('');
-  const[confirmPassword,setconfirmpassword] = useState('');
-  
+const getTheme = () =>
+  typeof window !== "undefined"
+    ? window.localStorage.getItem("growtyping.theme") || "dark"
+    : "dark";
+
+function ChangePassword() {
+  const [oldPassword, setoldpassword] = useState("");
+  const [newPassword, setnewpassword] = useState("");
+  const [confirmPassword, setconfirmpassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [theme] = useState(getTheme);
+
+  const isLight = theme === "light";
+
   const submit = async (e) => {
     e.preventDefault();
-    if(newPassword !== confirmPassword){
-      alert('password not matched');
+    if (newPassword !== confirmPassword) {
+      alert("New passwords do not match.");
       return;
     }
+    setLoading(true);
     try {
       const res = await api.post("GrowTyping/v1/users/changePassword", {
         oldPassword,
         newPassword,
-        confirmPassword
+        confirmPassword,
       });
 
-      if(res.data.error){
+      if (res.data.error) {
         alert(res.data.error);
       } else {
-        alert('Password changed successfully');
-        window.location.href = '/login';
+        alert("Password changed successfully.");
+        window.location.href = "/login";
       }
-    } catch(error){
+    } catch (error) {
       alert(error?.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
     }
   };
-  
-   
-  return(
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
-        <h2 className="text-3xl font-bold text-white mb-8 text-center tracking-tight">
-          Change Password
-        </h2>
-        <form onSubmit={submit} id="form" className="space-y-6">
+
+  /* ── colour tokens ────────────────────────────────────── */
+  const bg       = isLight ? "bg-[#F8FAFC]"    : "bg-[#0D1117]";
+  const cardBg   = isLight ? "bg-white"         : "bg-[#161B22]";
+  const border   = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
+  const text1    = isLight ? "text-[#0F172A]"   : "text-[#E6EDF3]";
+  const text2    = isLight ? "text-[#64748B]"   : "text-[#8B949E]";
+  const inputBg  = isLight ? "bg-[#F1F5F9]"    : "bg-[#21262D]";
+  const inputBdr = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
+
+  const inputCls = `w-full px-4 py-3 ${inputBg} border ${inputBdr} rounded-lg ${text1}
+    placeholder-[#8B949E] focus:outline-none focus:ring-2 focus:ring-emerald-500/40
+    focus:border-emerald-500 transition-all duration-200 text-sm font-medium`;
+
+  const labelCls = `block text-xs font-semibold ${text2} mb-1.5 uppercase tracking-widest`;
+
+  return (
+    <div className={`min-h-screen ${bg} flex flex-col items-center justify-center px-4 py-10 transition-colors duration-300`}>
+
+      {/* ── Logo ── */}
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg">
+          <span className="text-white font-black text-lg">GT</span>
+        </div>
+        <h1 className={`text-sm font-bold ${text2} tracking-widest uppercase`}>GrowTyping</h1>
+      </div>
+
+      {/* ── Card ── */}
+      <div className={`w-full max-w-md ${cardBg} border ${border} rounded-2xl shadow-sm p-8`}>
+
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => (window.location.href = "/settings")}
+            className={`p-1.5 rounded-lg border transition-all ${
+              isLight
+                ? "border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]"
+                : "border-[#30363D] text-[#8B949E] hover:bg-[#21262D]"
+            }`}
+          >
+            <FiArrowLeft size={15} />
+          </button>
           <div>
-            <label
-              htmlFor="old"
-              className="block text-sm font-semibold text-gray-100 mb-2"
-            >
-              Old Password
-            </label>
+            <h2 className={`text-xl font-bold ${text1}`}>Change Password</h2>
+            <p className={`text-xs ${text2}`}>Create a new secure password</p>
+          </div>
+        </div>
+
+        <form onSubmit={submit} className="space-y-5">
+          <div>
+            <label htmlFor="old" className={labelCls}>Current Password</label>
             <input
               type="password"
               id="old"
-              placeholder="Enter old password"
+              placeholder="Enter current password"
               value={oldPassword}
-              onChange={(e)=>setoldpassword(e.target.value)}
+              onChange={(e) => setoldpassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+              className={inputCls}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="new"
-              className="block text-sm font-semibold text-gray-100 mb-2"
-            >
-              New Password
-            </label>
+            <label htmlFor="new" className={labelCls}>New Password</label>
             <input
               type="password"
               id="new"
               placeholder="Enter new password"
               value={newPassword}
-              onChange={(e)=>setnewpassword(e.target.value)}
+              onChange={(e) => setnewpassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+              className={inputCls}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="confirm"
-              className="block text-sm font-semibold text-gray-100 mb-2"
-            >
-              Confirm Password
-            </label>
+            <label htmlFor="confirm" className={labelCls}>Confirm New Password</label>
             <input
               type="password"
               id="confirm"
-              placeholder="Confirm password"
+              placeholder="Confirm new password"
               value={confirmPassword}
-              onChange={(e)=>setconfirmpassword(e.target.value)}
+              onChange={(e) => setconfirmpassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+              className={inputCls}
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition duration-300 transform hover:scale-105 shadow-lg"
+            disabled={loading}
+            className={`w-full mt-2 py-3 rounded-lg text-sm font-bold tracking-wide transition-all duration-200
+              ${loading
+                ? "bg-emerald-700/50 cursor-not-allowed text-emerald-300"
+                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+              }`}
           >
-            Change Password
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                Updating...
+              </span>
+            ) : (
+              "Update Password"
+            )}
           </button>
         </form>
       </div>
@@ -104,4 +153,4 @@ function ChangePassword(){
   );
 }
 
-export default  ChangePassword;
+export default ChangePassword;

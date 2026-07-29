@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import {ApiResponse} from '../utils/ApiResponse.js';
 import crypto from "crypto";
 import { sendVerificationMail, sendPasswordResetMail, hasSmtpConfig } from "../utils/mail.service.js";
+import { getCache, setCache, deleteCache } from "../utils/redis.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 const cookieOptions = {
@@ -274,7 +275,10 @@ const updateDetails=asyncHandler(async(req,res)=>{
            }
        },
         {new:true}
-    ).select("-password");
+    ).select("-password -refreshToken");
+
+    await deleteCache(`user:profile:${req.user?._id}`);
+
     return res
         .status(200)
         .json(
@@ -291,6 +295,7 @@ const deleteUser=asyncHandler(async(req,res)=>{
         throw new ApiError(403, "Account deletion is disabled for this user.");
     }
     await User.findByIdAndDelete(user._id);
+    await deleteCache(`user:profile:${req.user?._id}`);
     return res
         .status(200)
         .json(
@@ -308,10 +313,21 @@ const getUsername=asyncHandler(async(req,res)=>{
 }); 
 
 const getUserProfile=asyncHandler(async(req,res)=>{
+    const cacheKey = `user:profile:${req.user?._id}`;
+    const cachedUser = await getCache(cacheKey);
+    if (cachedUser) {
+        return res
+            .status(200)
+            .json(new ApiResponse(200, cachedUser, "User profile fetched successfully (from Redis cache)"));
+    }
+
     const user=await User.findById(req.user?._id).select("-password -refreshToken");
     if(!user){
         throw new ApiError(404,"User not found");
-   }
+    }
+
+    await setCache(cacheKey, user, 1800); // 30 minutes TTL
+
     return res
         .status(200)
         .json(
@@ -333,6 +349,9 @@ const updateTheme=asyncHandler(async(req,res)=>{
        },
         {new:true}
     ).select("-password -refreshToken");
+
+    await deleteCache(`user:profile:${req.user?._id}`);
+
     return res
         .status(200)
         .json(

@@ -1,35 +1,42 @@
-import React,{ useEffect, useState } from "react";
-import{ Link, useSearchParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
 
-function VerifyEmail(){
+const getTheme = () =>
+  typeof window !== "undefined"
+    ? window.localStorage.getItem("growtyping.theme") || "dark"
+    : "dark";
+
+function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("Verifying your email...");
+  const [message, setMessage] = useState("Verifying your email address...");
+  const [theme] = useState(getTheme);
 
+  const isLight = theme === "light";
   const token = searchParams.get("token");
   const id = searchParams.get("id");
 
-  useEffect(() =>{
-    const verify = async() =>{
-      if(!token || !id){
+  useEffect(() => {
+    const verify = async () => {
+      if (!token || !id) {
         setStatus("error");
-        setMessage("Invalid verification link.");
+        setMessage("Invalid verification link. Please check your email and try again.");
         return;
       }
 
-      try{
-        const response = await api.get("GrowTyping/v1/users/verify-email",{
-          params:{ token, id },
+      try {
+        const response = await api.get("GrowTyping/v1/users/verify-email", {
+          params: { token, id },
         });
 
         setStatus("success");
-        setMessage(response?.data?.message || "Email verified successfully.");
-      } catch(error){
+        setMessage(response?.data?.message || "Email verified successfully. You can now sign in.");
+      } catch (error) {
         setStatus("error");
         setMessage(
           error?.response?.data?.message ||
-            "Verification link is invalid or expired."
+            "Verification link is invalid or has expired. Please request a new one.",
         );
       }
     };
@@ -37,37 +44,62 @@ function VerifyEmail(){
     verify();
   }, [id, token]);
 
-  return(
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4 py-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px]"></div>
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
+  /* ── colour tokens ────────────────────────────────────── */
+  const bg     = isLight ? "bg-[#F8FAFC]"    : "bg-[#0D1117]";
+  const cardBg = isLight ? "bg-white"         : "bg-[#161B22]";
+  const border = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
+  const text1  = isLight ? "text-[#0F172A]"   : "text-[#E6EDF3]";
+  const text2  = isLight ? "text-[#64748B]"   : "text-[#8B949E]";
 
-      <div className="w-full max-w-md bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-purple-500/20 relative z-10">
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 pointer-events-none"></div>
+  return (
+    <div className={`min-h-screen ${bg} flex flex-col items-center justify-center px-4 py-10 transition-colors duration-300`}>
 
-        <div className="relative z-20 text-center">
-          <h2 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
-            Email Verification
-          </h2>
+      {/* ── Logo ── */}
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg">
+          <span className="text-white font-black text-lg">GT</span>
+        </div>
+        <h1 className={`text-sm font-bold ${text2} tracking-widest uppercase`}>GrowTyping</h1>
+      </div>
 
-          <p className="text-slate-300 text-base mt-4">{message}</p>
+      {/* ── Card ── */}
+      <div className={`w-full max-w-md ${cardBg} border ${border} rounded-2xl shadow-sm p-10 text-center`}>
 
-         {status === "loading" &&(
-            <div className="mt-6 flex justify-center">
-              <div className="w-10 h-10 border-4 border-purple-300/30 border-t-purple-400 rounded-full animate-spin"></div>
+        {/* Status icon area */}
+        <div className="flex justify-center mb-6">
+          {status === "loading" && (
+            <div className="w-14 h-14 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
+          )}
+          {status === "success" && (
+            <div className="w-14 h-14 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center">
+              <svg className="w-7 h-7 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
             </div>
           )}
-
-         {status !== "loading" &&(
-            <Link
-              to="/login"
-              className="inline-block mt-8 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl hover:shadow-2xl transition duration-300"
-            >
-              Go To Login
-            </Link>
+          {status === "error" && (
+            <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+              <svg className="w-7 h-7 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
           )}
         </div>
+
+        <h2 className={`text-2xl font-bold ${text1} mb-3`}>Email Verification</h2>
+
+        <p className={`text-sm leading-relaxed ${status === "success" ? "text-emerald-500" : status === "error" ? "text-red-400" : text2}`}>
+          {message}
+        </p>
+
+        {status !== "loading" && (
+          <Link
+            to="/login"
+            className="inline-block mt-8 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-all duration-200 shadow-sm"
+          >
+            Go to Sign In
+          </Link>
+        )}
       </div>
     </div>
   );

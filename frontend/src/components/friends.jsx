@@ -12,7 +12,7 @@ const Friends = () => {
   
   // Theme state: dark / light
   const [theme, setTheme] = useState(() => {
-    return window.localStorage.getItem("growtyping.friendsTheme") || "dark";
+    return window.localStorage.getItem("growtyping.theme") || "dark";
   });
 
   // Friend details modal state
@@ -24,7 +24,7 @@ const Friends = () => {
   const toggleTheme = () => {
     const nextTheme = isLight ? "dark" : "light";
     setTheme(nextTheme);
-    window.localStorage.setItem("growtyping.friendsTheme", nextTheme);
+    window.localStorage.setItem("growtyping.theme", nextTheme);
   };
 
   const fetchFriends = async () => {
@@ -206,10 +206,9 @@ const Friends = () => {
             </h2>
             <div className={`p-3 rounded-xl border text-xs leading-relaxed flex items-center gap-2 ${
               isLight
-                ? "bg-amber-50 border-amber-200 text-amber-800"
-                : "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                ? "bg-slate-50 border-slate-200 text-slate-600"
+                : "bg-slate-800/60 border-slate-700/60 text-slate-400"
             }`}>
-              <span className="text-base">💡</span>
               <span>
                 <strong>Note:</strong> Find the user with their unique User ID or Username from their profile. Adding a user makes you mutual friends instantly!
               </span>
@@ -315,7 +314,6 @@ const Friends = () => {
             <div className={`p-12 rounded-2xl border text-center ${
               isLight ? "bg-white border-slate-200" : "bg-[#111c2d] border-slate-800"
             }`}>
-              <div className="text-4xl mb-3"></div>
               <h3 className="text-lg font-bold mb-1">No friends added yet</h3>
               <p className={`text-sm max-w-md mx-auto ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                 Use the search box above with a user's ID or username to find friends and compare typing stats!

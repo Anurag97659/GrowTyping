@@ -24,7 +24,7 @@ const Leaderboard = () => {
   const [testType, setTestType] = useState("all");
 
   const [theme, setTheme] = useState(() => {
-    return window.localStorage.getItem("growtyping.leaderboardTheme") || "dark";
+    return window.localStorage.getItem("growtyping.theme") || "dark";
   });
 
   const isLight = theme === "light";
@@ -32,7 +32,7 @@ const Leaderboard = () => {
   const toggleTheme = () => {
     const nextTheme = isLight ? "dark" : "light";
     setTheme(nextTheme);
-    window.localStorage.setItem("growtyping.leaderboardTheme", nextTheme);
+    window.localStorage.setItem("growtyping.theme", nextTheme);
   };
 
   const fetchLeaderboard = async () => {
@@ -192,7 +192,6 @@ const Leaderboard = () => {
           <div className={`p-12 rounded-2xl border text-center ${
             isLight ? "bg-white border-slate-200" : "bg-[#111c2d] border-slate-800"
           }`}>
-            <div className="text-4xl mb-3"></div>
             <h3 className="text-lg font-bold mb-1">No rankings available</h3>
             <p className={`text-sm max-w-md mx-auto ${isLight ? "text-slate-500" : "text-slate-400"}`}>
               No typing tests have been recorded yet for the selected filters. Take a test to claim your spot!

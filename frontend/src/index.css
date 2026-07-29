@@ -2,9 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Global font ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Smooth scrollbar (chromium) ───────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 148, 158, 0.3);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 148, 158, 0.5); }
+
+/* ─── Light-theme overrides for dashboard/friends/leaderboard ─ */
+
+/* These pages use the class `gt-light` on the root div */
+
+.gt-light .bg-white\/3,
+.gt-light .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.gt-light .bg-black\/30 {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.gt-light .border-white\/5,
+.gt-light .border-white\/10,
+.gt-light .border-white\/20 {
+  border-color: rgba(226, 232, 240, 0.8);
+}
+
+.gt-light .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(226, 232, 240, 0.5);
+}
+
+.gt-light .text-white,
+.gt-light .text-gray-300 {
+  color: #0f172a;
+}
+
+.gt-light .text-gray-400 {
+  color: #475569;
+}
+
+.gt-light .text-gray-500,
+.gt-light .text-gray-600 {
+  color: #64748b;
+}
+
+.gt-light input,
+.gt-light select {
+  color: #0f172a;
+}
+
+.gt-light input::placeholder {
+  color: #94a3b8;
+}
+
+.gt-light .hover\:bg-white\/5:hover,
+.gt-light .hover\:bg-white\/10:hover {
+  background-color: rgba(248, 250, 252, 0.98);
+}
+
+/* Legacy class support */
 .dashboard-light .bg-white\/3,
 .dashboard-light .bg-white\/5 {
-  background-color: rgba(255, 255, 255, 0.78);
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 .dashboard-light .bg-black\/30 {
@@ -14,16 +82,16 @@
 .dashboard-light .border-white\/5,
 .dashboard-light .border-white\/10,
 .dashboard-light .border-white\/20 {
-  border-color: rgba(148, 163, 184, 0.28);
+  border-color: rgba(226, 232, 240, 0.8);
 }
 
 .dashboard-light .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(148, 163, 184, 0.18);
+  border-color: rgba(226, 232, 240, 0.5);
 }
 
 .dashboard-light .text-white,
 .dashboard-light .text-gray-300 {
-  color: #1e293b;
+  color: #0f172a;
 }
 
 .dashboard-light .text-gray-400 {
@@ -37,7 +105,7 @@
 
 .dashboard-light input,
 .dashboard-light select {
-  color: #1e293b;
+  color: #0f172a;
 }
 
 .dashboard-light input::placeholder {
@@ -46,5 +114,5 @@
 
 .dashboard-light .hover\:bg-white\/5:hover,
 .dashboard-light .hover\:bg-white\/10:hover {
-  background-color: rgba(248, 250, 252, 0.95);
+  background-color: rgba(248, 250, 252, 0.98);
 }

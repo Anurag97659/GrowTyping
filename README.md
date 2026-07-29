@@ -1,6 +1,6 @@
 # GrowTyping
 
-GrowTyping is a full-stack typing practice application for improving typing speed, accuracy, and key-level consistency. It combines timed exercises with saved performance analytics, replayable tests, and a responsive dashboard.
+GrowTyping is a full-stack typing practice application for improving typing speed, accuracy, and key-level consistency. It combines timed exercises with saved performance analytics, replayable tests, high-performance Redis caching, and a responsive dashboard.
 ### **Live Demo:** [GrowTyping Demo](https://growtyping-1.onrender.com/) || **Demo username and password = Avasanam && 123456789**
 
 ## Features
@@ -10,6 +10,8 @@ GrowTyping is a full-stack typing practice application for improving typing spee
 - Live WPM and accuracy feedback while typing.
 - Per-key mistake tracking with a keyboard heatmap and weak-key analysis.
 - Replay a saved test using its original passage and duration.
+- High-Performance Caching: Redis integration with automatic fallback for user profiles, heavy aggregation stats, and global leaderboards.
+- Modular Theme Container: Extracted theme configurations into a separate container (`src/config/themes.js`) with instant local storage caching—eliminating all theme rendering delays.
 - Dashboard charts for WPM, accuracy, daily progress, history, streaks, and best records.
 - History pagination with a Load More action.
 - User accounts, email verification, profile management, and password reset.
@@ -23,6 +25,7 @@ GrowTyping is a full-stack typing practice application for improving typing spee
 | Frontend | React, Vite, Tailwind CSS, Axios |
 | Backend | Node.js, Express |
 | Database | MongoDB with Mongoose |
+| Caching & Performance | Redis (ioredis) with DB Fallback |
 | Authentication | JWT-based API authentication |
 | Email | Nodemailer |
 
@@ -33,6 +36,7 @@ GrowTyping is a full-stack typing practice application for improving typing spee
 
 - Node.js 20 or later
 - MongoDB database or MongoDB Atlas connection string
+- Redis Server (optional, graceful fallback to direct database query if offline)
 
 ### 1. Configure and run the backend
 
@@ -47,6 +51,7 @@ Create `Backend/.env` with the required values:
 PORT=8000
 MONGODB_URI=your_mongodb_connection_string
 DB_NAME=GrowTyping
+REDIS_URL=redis://127.0.0.1:6379
 ACCESS_TOKEN_SECRET=replace_with_a_secure_secret
 ACCESS_TOKEN_EXPIRY=1d
 REFRESH_TOKEN_SECRET=replace_with_a_secure_secret

@@ -3,6 +3,7 @@ import{ ApiError } from "../utils/ApiError.js";
 import{ ApiResponse } from "../utils/ApiResponse.js";
 import{ TypingStat } from "../models/typingStat.model.js";
 import mongoose from "mongoose";
+import { getCache, setCache, deleteCachePattern } from "../utils/redis.js";
 
 
 const getDateMatch =(range) =>{
@@ -134,6 +135,11 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
         weakKeys: normalizedWeakKeys,
         keyStats: normalizedKeyStats
     });
+
+    // Invalidate user stats cache and leaderboard cache in Redis
+    await deleteCachePattern(`stats:*:${userId}*`);
+    await deleteCachePattern("stats:leaderboard:*");
+
     console.log("Saved stat:", stat);
     return res.status(201).json(
         new ApiResponse(201, stat, "Typing stat saved successfully")
@@ -141,6 +147,15 @@ const saveTypingStat = asyncHandler(async(req, res) =>{
 });
 
 const getDashboardStats = asyncHandler(async(req, res) =>{
+    const range = req.query.range || "all";
+    const cacheKey = `stats:dashboard:${req.user?._id}:${range}`;
+    const cachedStats = await getCache(cacheKey);
+    if (cachedStats) {
+        return res.status(200).json(
+            new ApiResponse(200, cachedStats, "Dashboard stats fetched successfully (from Redis cache)")
+        );
+    }
+
     const userId = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
 
@@ -157,21 +172,28 @@ const getDashboardStats = asyncHandler(async(req, res) =>{
         }
     ]);
 
+    const result = stats[0] || {
+        totalSessions: 0,
+        totalTime: 0,
+        avgWpm: 0,
+        avgAccuracy: 0
+    };
+
+    await setCache(cacheKey, result, 300); // 5 min TTL
+
     return res.status(200).json(
-        new ApiResponse(
-            200,
-            stats[0] ||{
-                totalSessions: 0,
-                totalTime: 0,
-                avgWpm: 0,
-                avgAccuracy: 0
-            },
-            "Dashboard stats fetched successfully"
-        )
+        new ApiResponse(200, result, "Dashboard stats fetched successfully")
     );
 });
 
 const getAverageWpmByType = asyncHandler(async(req, res) =>{
+    const range = req.query.range || "all";
+    const cacheKey = `stats:avgwpm:${req.user?._id}:${range}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+        return res.status(200).json(new ApiResponse(200, cachedData, "Average WPM fetched (from Redis cache)"));
+    }
+
     const userId = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
 
@@ -185,12 +207,21 @@ const getAverageWpmByType = asyncHandler(async(req, res) =>{
         }
     ]);
 
+    await setCache(cacheKey, stats, 300);
+
     return res
         .status(200)
         .json(new ApiResponse(200, stats, "Average WPM by test type fetched"));
 });
 
 const getDailyProgress = asyncHandler(async(req, res) =>{
+    const range = req.query.range || "all";
+    const cacheKey = `stats:daily:${req.user?._id}:${range}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+        return res.status(200).json(new ApiResponse(200, cachedData, "Daily progress fetched (from Redis cache)"));
+    }
+
     const userId = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
 
@@ -211,12 +242,21 @@ const getDailyProgress = asyncHandler(async(req, res) =>{
       { $sort:{ "_id.date": 1 } }
     ]);
 
+    await setCache(cacheKey, progress, 300);
+
     return res
         .status(200)
         .json(new ApiResponse(200, progress, "Daily progress fetched"));
 });
 
 const getTopWeakKeys = asyncHandler(async(req, res) =>{
+    const range = req.query.range || "all";
+    const cacheKey = `stats:weakkeys:${req.user?._id}:${range}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+        return res.status(200).json(new ApiResponse(200, cachedData, "Top weak keys fetched (from Redis cache)"));
+    }
+
     const userId = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
 
@@ -233,12 +273,21 @@ const getTopWeakKeys = asyncHandler(async(req, res) =>{
       { $limit: 5 }
     ]);
 
+    await setCache(cacheKey, weakKeys, 300);
+
     return res
         .status(200)
         .json(new ApiResponse(200, weakKeys, "Top weak keys fetched"));
 });
 
 const getKeyboardHeatmap = asyncHandler(async (req, res) => {
+    const range = req.query.range || "all";
+    const cacheKey = `stats:heatmap:${req.user?._id}:${range}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+        return res.status(200).json(new ApiResponse(200, cachedData, "Keyboard heatmap fetched (from Redis cache)"));
+    }
+
     const userId = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
 
@@ -288,6 +337,8 @@ const getKeyboardHeatmap = asyncHandler(async (req, res) => {
                 ? Number(((keyStat.mistakes / keyStat.attempts) * 100).toFixed(1))
                 : null
     }));
+
+    await setCache(cacheKey, heatmap, 300);
 
     return res
         .status(200)
@@ -515,7 +566,15 @@ const getUserTypingStreak = asyncHandler(async (req, res) => {
 });
 
 const getLeaderboard = asyncHandler(async (req, res) => {
-    const { range, testType } = req.query;
+    const { range = "all", testType = "all" } = req.query;
+    const cacheKey = `stats:leaderboard:${range}:${testType}`;
+    const cachedLeaderboard = await getCache(cacheKey);
+    if (cachedLeaderboard) {
+        return res.status(200).json(
+            new ApiResponse(200, cachedLeaderboard, "Leaderboard fetched successfully (from Redis cache)")
+        );
+    }
+
     const dateMatch = getDateMatch(range);
 
     const matchQuery = { ...dateMatch };
@@ -557,6 +616,8 @@ const getLeaderboard = asyncHandler(async (req, res) => {
             }
         }
     ]);
+
+    await setCache(cacheKey, leaderboard, 120); // 2 minutes TTL
 
     return res.status(200).json(
         new ApiResponse(200, leaderboard, "Leaderboard fetched successfully")
