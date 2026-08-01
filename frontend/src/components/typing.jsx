@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { FaGithub } from "react-icons/fa";
+import { FiUser, FiLogIn, FiUserPlus, FiAward, FiGrid, FiSettings, FiUsers, FiLogOut } from "react-icons/fi";
 import { themes } from "../config/themes";
 const WORDS = [
   // ============================================================
@@ -439,6 +440,17 @@ export default function TypingPage() {
 
   const [username, setUsername] = useState("Guest");
   const [loggedIn, setLoggedIn] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/GrowTyping/v1/users/logout");
+      setLoggedIn(false);
+      setUsername("Guest");
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
   const [theme, setTheme] = useState(() => {
     return window.localStorage.getItem("growtyping.theme") || "cyberpunk";
   });
@@ -781,38 +793,71 @@ export default function TypingPage() {
                 onClick={() =>
                   loggedIn ? navigate("/dashboard") : navigate("/login")
                 }
-                className={`px-5 py-2.5 text-sm font-bold text-${currentTheme.primary}-400 bg-slate-800/60 border border-${currentTheme.primary}-500/40 rounded-lg hover:bg-slate-700 hover:border-${currentTheme.primary}-400/70 transition-all duration-200 shadow-lg hover:shadow-${currentTheme.primary}-500/30 flex items-center gap-1.5`}
+                className={`px-5 py-2.5 text-sm font-bold text-${currentTheme.primary}-400 bg-slate-800/60 border border-${currentTheme.primary}-500/40 rounded-lg hover:bg-slate-700 hover:border-${currentTheme.primary}-400/70 transition-all duration-200 shadow-lg hover:shadow-${currentTheme.primary}-500/30 flex items-center gap-2`}
                 title={username}
               >
+                <FiUser className="text-base" />
                 <span>{username}</span>
                 <span className="text-xs opacity-60 transition-transform duration-200 group-hover:rotate-180">▼</span>
               </button>
               
               <div className="absolute right-0 top-full mt-1.5 w-52 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-1.5">
-                <button
-                  onClick={() => navigate(loggedIn ? "/dashboard" : "/login")}
-                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
-                >
-                  <span className="text-base"></span> Dashboard
-                </button>
-                <button
-                  onClick={() => navigate(loggedIn ? "/settings" : "/login")}
-                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
-                >
-                  <span className="text-base"></span> Profile (Settings)
-                </button>
-                <button
-                  onClick={() => navigate("/friends")}
-                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
-                >
-                  <span className="text-base"></span> Friends
-                </button>
-                <button
-                  onClick={() => navigate("/leaderboard")}
-                  className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
-                >
-                  <span className="text-base"></span> Leaderboard
-                </button>
+                {loggedIn ? (
+                  <>
+                    <button
+                      onClick={() => navigate("/dashboard")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiGrid className="text-base text-slate-400" /> Dashboard
+                    </button>
+                    <button
+                      onClick={() => navigate("/settings")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiSettings className="text-base text-slate-400" /> Settings
+                    </button>
+                    <button
+                      onClick={() => navigate("/friends")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiUsers className="text-base text-slate-400" /> Friends
+                    </button>
+                    <button
+                      onClick={() => navigate("/leaderboard")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiAward className="text-base text-slate-400" /> Leaderboard
+                    </button>
+                    <div className="my-1 border-t border-slate-800"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiLogOut className="text-base text-red-400" /> Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiLogIn className="text-base text-slate-400" /> Login
+                    </button>
+                    <button
+                      onClick={() => navigate("/registration")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiUserPlus className="text-base text-slate-400" /> Register
+                    </button>
+                    <button
+                      onClick={() => navigate("/leaderboard")}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white rounded-lg transition-colors flex items-center gap-2.5"
+                    >
+                      <FiAward className="text-base text-slate-400" /> Leaderboard
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
