@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../lib/api";
+import api, { API_BASE_URL } from "../lib/api";
 import { useTheme } from "../context/ThemeContext";
 import { FiArrowLeft, FiSun, FiMoon, FiLock, FiUser, FiMail, FiMapPin } from "react-icons/fi";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Registration() {
   const navigate = useNavigate();
-  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES, setMode } = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +15,16 @@ export default function Registration() {
   const [username, setUsername] = useState("");
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (!window.localStorage.getItem("growtyping.themeMode")) {
+      setMode("light");
+    }
+  }, [setMode]);
+
+  const continueWithGoogle = () => {
+    window.location.assign(`${API_BASE_URL}/GrowTyping/v1/users/oauth/google`);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -173,6 +184,21 @@ export default function Registration() {
             {loading ? "Creating Account..." : "Register Now"}
           </button>
         </form>
+
+        <div className="flex items-center gap-3">
+          <div className={`h-px flex-1 ${themeConfig.border}`} />
+          <span className={`text-[10px] font-bold uppercase ${themeConfig.mutedText}`}>or</span>
+          <div className={`h-px flex-1 ${themeConfig.border}`} />
+        </div>
+
+        <button
+          type="button"
+          onClick={continueWithGoogle}
+          className={`w-full py-3 ${themeConfig.buttonSecondary} text-xs font-bold tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md`}
+        >
+          <FcGoogle className="text-lg" />
+          <span>Continue with Google</span>
+        </button>
 
         <div className="text-center pt-2">
           <p className={`text-xs ${themeConfig.mutedText}`}>

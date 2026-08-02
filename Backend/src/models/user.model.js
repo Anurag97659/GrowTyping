@@ -31,6 +31,12 @@ const userSchema=new Schema({
         required:true,
         minlength:8
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true,
+        index: true,
+    },
     fullname:{
         type : String,
         required:true,

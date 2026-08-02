@@ -10,7 +10,7 @@ export const ThemeProvider = ({ children }) => {
   });
 
   const [mode, setMode] = useState(() => {
-    return window.localStorage.getItem("growtyping.themeMode") || "dark";
+    return window.localStorage.getItem("growtyping.themeMode") || "light";
   });
 
   const themeConfig = getThemeConfig(themeId, mode);

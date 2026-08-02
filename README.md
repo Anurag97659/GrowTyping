@@ -128,3 +128,12 @@ Open `http://localhost:5173` or `http://localhost:5174` in your browser.
 
 - Do not commit `.env` files, database connection strings, SMTP credentials, or JWT secrets.
 - Use strong secrets and secure HTTPS settings for production deployments.
+# Google OAuth setup
+
+Google sign-in is configured through environment variables in `Backend/.env` (copy `Backend/.env.example` for the OAuth entries). The Google Cloud OAuth client must include this exact authorized redirect URI:
+
+```text
+http://localhost:8000/GrowTyping/v1/users/oauth/google/callback
+```
+
+For production, change `GOOGLE_REDIRECT_URI` to your public backend URL with the same path, set `FRONTEND_URL` and `CORS_ORIGIN` to your public frontend URL, and add the same callback URL in Google Cloud.

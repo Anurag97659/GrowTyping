@@ -13,14 +13,20 @@ const app = express();
 //   credentials: true
 // }));
 // app.options("*", cors());
-app.use(cors({
-  origin: [
+const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
     'https://growtyping-1.onrender.com',
-    'https://growtyping.vercel.app/'
-  ],
+    'https://growtyping.vercel.app',
+    ...(process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/$/, ""))
+      .filter(Boolean),
+];
+
+app.use(cors({
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

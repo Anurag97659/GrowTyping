@@ -4,6 +4,7 @@ const ACCESS_TOKEN_KEY = "growtyping.accessToken";
 
 const rawBaseURL = import.meta.env.VITE_REACT_APP_API || "http://localhost:8000";
 const cleanBaseURL = rawBaseURL.replace(/\/+$/, "");
+export const API_BASE_URL = cleanBaseURL;
 
 const api = axios.create({
   baseURL: cleanBaseURL,

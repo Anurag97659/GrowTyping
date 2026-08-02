@@ -11,6 +11,7 @@ import ChangePassword from "./components/change-password";
 import VerifyEmail from "./components/verify-email";
 import Friends from "./components/friends";
 import Leaderboard from "./components/leaderboard";
+import OAuthCallback from "./components/oauth-callback";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/registration" element={<Registration />} />
           <Route path="/typing" element={<TypingPage />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/edit-profile" element={<ChangeDetails />} />

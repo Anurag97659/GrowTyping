@@ -22,12 +22,20 @@ import {
   removeFollower,
   forgotPassword,
 } from "../controller/user.controller.js";
+import {
+  completeGoogleAuth,
+  googleCallback,
+  googleRedirect,
+} from "../controller/oauth.controller.js";
 
 const router = Router();
 router.route('/register').post(registeruser);
 router.route('/verify-email').get(verifyEmail);
 router.route('/refreshtoken').get(refreshAccessToken);
 router.route('/login').post(loginuser);
+router.get('/oauth/google', googleRedirect);
+router.get('/oauth/google/callback', googleCallback);
+router.post('/oauth/google/complete', completeGoogleAuth);
 router.route('/forgotpassword').post(forgotPassword);
 router.route('/logout').post(verifyJWT, logoutuser);
 router.route('/changepassword').post(verifyJWT, changeCurrentPassword);
