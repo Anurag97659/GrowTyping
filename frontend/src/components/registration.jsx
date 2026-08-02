@@ -1,28 +1,19 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { useTheme } from "../context/ThemeContext";
+import { FiArrowLeft, FiSun, FiMoon, FiLock, FiUser, FiMail, FiMapPin } from "react-icons/fi";
 
-const getTheme = () =>
-  typeof window !== "undefined"
-    ? window.localStorage.getItem("growtyping.theme") || "dark"
-    : "dark";
+export default function Registration() {
+  const navigate = useNavigate();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
 
-function Registration() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullname, setFullname] = useState("");
   const [username, setUsername] = useState("");
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState(getTheme);
-
-  const isLight = theme === "light";
-
-  const toggleTheme = () => {
-    const next = isLight ? "dark" : "light";
-    setTheme(next);
-    window.localStorage.setItem("growtyping.theme", next);
-  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -40,16 +31,11 @@ function Registration() {
       if (res.data.error) {
         alert(res.data.error);
       } else {
-        const fallbackLink = res?.data?.data?.verificationUrl;
         const message =
           res?.data?.message ||
           "Registration successful. Please check your email and verify your account before login.";
-
-        if (fallbackLink && import.meta.env.DEV) {
-          console.info("Verification link (dev fallback):", fallbackLink);
-        }
-
         alert(message);
+        navigate("/login");
       }
     } catch (error) {
       alert(error?.response?.data?.message || "Registration failed. Try again.");
@@ -58,104 +44,141 @@ function Registration() {
     }
   };
 
-  /* ── colour tokens ────────────────────────────────────── */
-  const bg      = isLight ? "bg-[#F8FAFC]"    : "bg-[#0D1117]";
-  const cardBg  = isLight ? "bg-white"         : "bg-[#161B22]";
-  const border  = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
-  const text1   = isLight ? "text-[#0F172A]"   : "text-[#E6EDF3]";
-  const text2   = isLight ? "text-[#64748B]"   : "text-[#8B949E]";
-  const inputBg = isLight ? "bg-[#F1F5F9]"    : "bg-[#21262D]";
-  const inputBdr = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
-
-  const inputCls = `w-full px-4 py-3 ${inputBg} border ${inputBdr} rounded-lg ${text1}
-    placeholder-[#8B949E] focus:outline-none focus:ring-2 focus:ring-emerald-500/40
-    focus:border-emerald-500 transition-all duration-200 text-sm font-medium`;
-
-  const labelCls = `block text-xs font-semibold ${text2} mb-1.5 uppercase tracking-widest`;
-
-  const fields = [
-    { label: "Full Name",  type: "text",     value: fullname,  setter: setFullname,  placeholder: "John Doe" },
-    { label: "Email",      type: "email",    value: email,     setter: setEmail,     placeholder: "you@example.com" },
-    { label: "Username",   type: "text",     value: username,  setter: setUsername,  placeholder: "johndoe" },
-    { label: "Password",   type: "password", value: password,  setter: setPassword,  placeholder: "Create a password" },
-    { label: "Address",    type: "text",     value: address,   setter: setAddress,   placeholder: "123 Main St, City" },
-  ];
-
   return (
-    <div className={`min-h-screen ${bg} flex flex-col items-center justify-center px-4 py-10 transition-colors duration-300`}>
-
-      {/* ── Theme toggle ── */}
-      <div className="absolute top-5 right-5">
+    <div className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} flex flex-col justify-center items-center p-4 transition-colors duration-300`}>
+      {/* Top Bar */}
+      <div className="w-full max-w-lg flex items-center justify-between mb-6">
         <button
-          onClick={toggleTheme}
-          className={`px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-            isLight
-              ? "bg-white border-[#E2E8F0] text-[#0F172A] hover:bg-[#F1F5F9]"
-              : "bg-[#21262D] border-[#30363D] text-[#E6EDF3] hover:bg-[#30363D]"
-          }`}
+          onClick={() => navigate("/typing")}
+          className={`p-2.5 ${themeConfig.buttonSecondary} flex items-center gap-2 text-xs font-bold`}
         >
-          {isLight ? "Dark Mode" : "Light Mode"}
+          <FiArrowLeft className="text-sm" /> Back to Typing
         </button>
-      </div>
 
-      {/* ── Logo ── */}
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg">
-          <span className="text-white font-black text-lg">GT</span>
+        <div className="flex items-center gap-2">
+          <select
+            value={themeId}
+            onChange={(e) => setThemeId(e.target.value)}
+            className={`px-2.5 py-1.5 text-xs font-medium ${themeConfig.input} cursor-pointer`}
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={toggleMode}
+            className={`p-2.5 ${themeConfig.buttonSecondary}`}
+            title="Toggle Dark / Light Mode"
+          >
+            {mode === "dark" ? <FiSun className="text-xs" /> : <FiMoon className="text-xs" />}
+          </button>
         </div>
-        <h1 className={`text-sm font-bold ${text2} tracking-widest uppercase`}>GrowTyping</h1>
       </div>
 
-      {/* ── Card ── */}
-      <div className={`w-full max-w-2xl ${cardBg} border ${border} rounded-2xl shadow-sm p-8 md:p-10`}>
-        <h2 className={`text-2xl font-bold ${text1} mb-1`}>Create account</h2>
-        <p className={`text-sm ${text2} mb-7`}>Fill in the details below to get started.</p>
+      {/* Main Registration Card */}
+      <div className={`w-full max-w-lg ${themeConfig.card} border ${themeConfig.border} p-8 space-y-6 shadow-2xl`}>
+        <div className="text-center space-y-1">
+          <h1 className={`text-3xl font-extrabold tracking-tight ${themeConfig.accent}`}>
+            Create Account
+          </h1>
+          <p className={`text-xs ${themeConfig.mutedText}`}>
+            Join GrowTyping to track your progress and compete globally
+          </p>
+        </div>
 
-        <form onSubmit={submit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {fields.map((field, idx) => (
-              <div key={idx} className={field.label === "Address" ? "md:col-span-2" : ""}>
-                <label className={labelCls}>{field.label}</label>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Username</label>
+              <div className="relative">
+                <FiUser className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
                 <input
-                  type={field.type}
-                  value={field.value}
-                  onChange={(e) => field.setter(e.target.value)}
-                  className={inputCls}
-                  placeholder={field.placeholder}
+                  type="text"
                   required
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
                 />
               </div>
-            ))}
+            </div>
+
+            <div className="space-y-1">
+              <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Full Name</label>
+              <div className="relative">
+                <FiUser className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+                <input
+                  type="text"
+                  required
+                  placeholder="Full Name"
+                  value={fullname}
+                  onChange={(e) => setFullname(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Email Address</label>
+            <div className="relative">
+              <FiMail className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+              <input
+                type="email"
+                required
+                placeholder="email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Password</label>
+            <div className="relative">
+              <FiLock className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+              <input
+                type="password"
+                required
+                placeholder="Choose a strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Location (Optional)</label>
+            <div className="relative">
+              <FiMapPin className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+              <input
+                type="text"
+                placeholder="City / Country"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full mt-7 py-3 rounded-lg text-sm font-bold tracking-wide transition-all duration-200
-              ${loading
-                ? "bg-emerald-700/50 cursor-not-allowed text-emerald-300"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm hover:shadow-emerald-600/30"
-              }`}
+            className={`w-full py-3 ${themeConfig.buttonPrimary} text-xs font-bold tracking-wider uppercase transition-all shadow-md mt-2`}
           >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
-                Creating account...
-              </span>
-            ) : (
-              "Create Account"
-            )}
+            {loading ? "Creating Account..." : "Register Now"}
           </button>
         </form>
 
-        <div className={`mt-6 pt-6 border-t ${border} text-center`}>
-          <p className={`text-sm ${text2}`}>
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-semibold text-emerald-500 hover:text-emerald-400 transition-colors"
-            >
-              Sign in
+        <div className="text-center pt-2">
+          <p className={`text-xs ${themeConfig.mutedText}`}>
+            Already registered?{" "}
+            <Link to="/login" className={`font-bold ${themeConfig.accent} hover:underline`}>
+              Sign in here
             </Link>
           </p>
         </div>
@@ -163,5 +186,3 @@ function Registration() {
     </div>
   );
 }
-
-export default Registration;

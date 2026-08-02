@@ -1,39 +1,43 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
-import { FiArrowLeft, FiSettings, FiAward, FiSun, FiMoon, FiClock, FiCalendar } from "react-icons/fi";
+import { useTheme } from "../context/ThemeContext";
+import {
+  FiArrowLeft,
+  FiAward,
+  FiClock,
+  FiCalendar,
+  FiSun,
+  FiMoon,
+  FiUser,
+  FiZap,
+  FiSearch,
+} from "react-icons/fi";
 
 const RANGES = [
   { id: "today", label: "Today" },
   { id: "lastWeek", label: "Last Week" },
   { id: "lastMonth", label: "Last Month" },
   { id: "thisYear", label: "This Year" },
-  { id: "allTime", label: "All Time" }
+  { id: "allTime", label: "All Time" },
 ];
 
 const TIMERS = [
   { id: "all", label: "All Timers" },
   { id: "15s", label: "15 Seconds" },
   { id: "30s", label: "30 Seconds" },
-  { id: "60s", label: "60 Seconds" }
+  { id: "60s", label: "60 Seconds" },
 ];
 
-const Leaderboard = () => {
+export default function Leaderboard() {
+  const navigate = useNavigate();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
+
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("allTime");
   const [testType, setTestType] = useState("all");
-
-  const [theme, setTheme] = useState(() => {
-    return window.localStorage.getItem("growtyping.theme") || "dark";
-  });
-
-  const isLight = theme === "light";
-
-  const toggleTheme = () => {
-    const nextTheme = isLight ? "dark" : "light";
-    setTheme(nextTheme);
-    window.localStorage.setItem("growtyping.theme", nextTheme);
-  };
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchLeaderboard = async () => {
     try {
@@ -55,314 +59,234 @@ const Leaderboard = () => {
     fetchLeaderboard();
   }, [range, testType]);
 
-  const topThree = leaderboard.slice(0, 3);
-  const remainingList = leaderboard.slice(3);
+  const filteredLeaderboard = leaderboard.filter((item) =>
+    (item.username || item.user?.username || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const topThree = filteredLeaderboard.slice(0, 3);
+  const remainingList = filteredLeaderboard.slice(3);
 
   return (
-    <div
-      className={`min-h-screen font-sans transition-colors duration-300 ${
-        isLight ? "bg-slate-50 text-slate-900" : "bg-[#0b131e] text-slate-100"
-      }`}
-    >
-      {/* Navbar */}
-      <header className={`sticky top-0 z-40 backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between shadow-lg ${
-        isLight ? "bg-white/80 border-slate-200" : "bg-[#0f1927]/80 border-slate-800"
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <FiAward className="text-slate-950 text-xl font-bold" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent">
-              GrowTyping Leaderboard
+    <div className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} p-4 sm:p-8 transition-colors duration-300`}>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Top Header */}
+        <div className={`flex items-center justify-between p-4 ${themeConfig.card} border ${themeConfig.border}`}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/typing")}
+              className={`p-2.5 ${themeConfig.buttonSecondary} flex items-center gap-2 text-sm font-semibold`}
+            >
+              <FiArrowLeft className="text-base" /> Typing Page
+            </button>
+            <h1 className={`text-xl sm:text-2xl font-extrabold tracking-tight ${themeConfig.accent}`}>
+              Global Leaderboard
             </h1>
-            <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-              Top Speed Typists Ranking
-            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={themeId}
+              onChange={(e) => setThemeId(e.target.value)}
+              className={`px-3 py-1.5 text-xs font-medium ${themeConfig.input} cursor-pointer`}
+            >
+              {THEMES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={toggleMode}
+              className={`p-2.5 ${themeConfig.buttonSecondary} transition-all`}
+              title="Toggle Dark / Light Mode"
+            >
+              {mode === "dark" ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Light / Dark Mode Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2.5 rounded-xl border transition-all hover:scale-105 flex items-center gap-2 text-xs font-semibold ${
-              isLight
-                ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800"
-            }`}
-            title="Toggle Light/Dark Theme"
-          >
-            {isLight ? <FiMoon className="text-slate-600" size={16} /> : <FiSun className="text-amber-400" size={16} />}
-            <span>{isLight ? "Dark Mode" : "Light Mode"}</span>
-          </button>
-
-          <button
-            onClick={() => (window.location.href = "/typing")}
-            className={`p-2.5 rounded-xl border transition-all hover:scale-105 ${
-              isLight
-                ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800"
-            }`}
-            title="Back to Typing"
-          >
-            <FiArrowLeft size={18} />
-          </button>
-
-          <button
-            onClick={() => (window.location.href = "/settings")}
-            className={`p-2.5 rounded-xl border transition-all hover:scale-105 ${
-              isLight
-                ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800"
-            }`}
-            title="Settings"
-          >
-            <FiSettings size={18} />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
-
-        {/* Filter Controls */}
-        <section className={`mb-10 p-6 rounded-2xl border backdrop-blur-md shadow-sm ${
-          isLight ? "bg-white border-slate-200" : "bg-[#111c2d]/90 border-slate-800"
-        }`}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            
-            {/* Range Filters */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <FiCalendar className="text-emerald-400" /> Time Range
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {RANGES.map((r) => (
-                  <button
-                    key={r.id}
-                    onClick={() => setRange(r.id)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      range === r.id
-                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20"
-                        : isLight
-                        ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        : "bg-slate-800/60 text-slate-400 hover:bg-slate-700 hover:text-white"
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Timer Filters */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <FiClock className="text-amber-400" /> Test Duration
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {TIMERS.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTestType(t.id)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      testType === t.id
-                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20"
-                        : isLight
-                        ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        : "bg-slate-800/60 text-slate-400 hover:bg-slate-700 hover:text-white"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+        {/* Filter Controls Bar */}
+        <div className={`p-6 ${themeConfig.card} border ${themeConfig.border} flex flex-col md:flex-row justify-between items-center gap-4`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-xs font-bold uppercase tracking-wider ${themeConfig.mutedText} mr-2 flex items-center gap-1`}>
+              <FiCalendar className="text-sm" /> Time Range:
+            </span>
+            {RANGES.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => setRange(r.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  range === r.id
+                    ? themeConfig.buttonPrimary
+                    : `${themeConfig.buttonSecondary} opacity-70 hover:opacity-100`
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
-        </section>
+
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <span className={`text-xs font-bold uppercase tracking-wider ${themeConfig.mutedText} mr-2 flex items-center gap-1`}>
+              <FiClock className="text-sm" /> Duration:
+            </span>
+            {TIMERS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTestType(t.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  testType === t.id
+                    ? themeConfig.buttonPrimary
+                    : `${themeConfig.buttonSecondary} opacity-70 hover:opacity-100`
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search Input Bar */}
+        <div className="relative max-w-md">
+          <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+          <input
+            type="text"
+            placeholder="Search typists by username..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`w-full pl-11 pr-4 py-2.5 text-xs ${themeConfig.input}`}
+          />
+        </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm font-semibold text-amber-400 animate-pulse">Loading Leaderboard Rankings...</p>
-          </div>
-        ) : leaderboard.length === 0 ? (
-          <div className={`p-12 rounded-2xl border text-center ${
-            isLight ? "bg-white border-slate-200" : "bg-[#111c2d] border-slate-800"
-          }`}>
-            <h3 className="text-lg font-bold mb-1">No rankings available</h3>
-            <p className={`text-sm max-w-md mx-auto ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-              No typing tests have been recorded yet for the selected filters. Take a test to claim your spot!
+          <div className={`p-12 text-center ${themeConfig.card} border ${themeConfig.border}`}>
+            <p className={`text-lg font-medium animate-pulse ${themeConfig.mutedText}`}>
+              Fetching leaderboard rankings...
             </p>
           </div>
         ) : (
           <>
             {/* Top 3 Podium Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 items-end">
-              {/* Silver - 2nd Place */}
-              {topThree[1] && (
-                <div className={`order-2 md:order-1 p-6 rounded-2xl border transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center relative overflow-hidden ${
-                  isLight
-                    ? "bg-white border-slate-200 shadow-lg"
-                    : "bg-[#111c2d] border-slate-700/80 shadow-xl"
-                }`}>
-                  <div className="absolute top-0 right-0 px-3 py-1 bg-slate-300 text-slate-900 text-xs font-black rounded-bl-xl uppercase tracking-wider">
-                    #2 SILVER
+            {topThree.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                {/* 2nd Place (Silver) */}
+                {topThree[1] && (
+                  <div className={`${themeConfig.card} p-6 border-2 border-slate-400/60 shadow-xl text-center relative flex flex-col justify-between order-2 md:order-1`}>
+                    <div className="w-12 h-12 mx-auto rounded-full bg-slate-300 text-slate-900 font-extrabold flex items-center justify-center text-lg mb-3 shadow-md">
+                      2
+                    </div>
+                    <h3 className={`text-xl font-black ${themeConfig.bodyText} truncate`}>
+                      {topThree[1].username || topThree[1].user?.username || "Typist"}
+                    </h3>
+                    <p className="text-3xl font-extrabold text-slate-300 my-3">
+                      {topThree[1].wpm || topThree[1].highestWpm || 0} <span className="text-xs font-normal">WPM</span>
+                    </p>
+                    <span className={`text-xs ${themeConfig.mutedText}`}>
+                      Accuracy: {topThree[1].accuracy || topThree[1].avgAccuracy || 100}%
+                    </span>
                   </div>
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900 font-black text-2xl flex items-center justify-center mb-3 shadow-md">
-                    2
-                  </div>
-                  <h3 className="font-bold text-lg text-emerald-400">@{topThree[1].username}</h3>
-                  <p className={`text-xs mb-4 ${isLight ? "text-slate-500" : "text-slate-400"}`}>{topThree[1].fullname}</p>
+                )}
 
-                  <div className="w-full space-y-2 pt-3 border-t border-slate-200 dark:border-slate-800 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Speed</span>
-                      <span className="font-black text-emerald-400 text-base">{Math.round(topThree[1].highestWpm)} WPM</span>
+                {/* 1st Place (Gold Highlight) */}
+                {topThree[0] && (
+                  <div className={`${themeConfig.card} p-6 border-2 border-amber-400 shadow-2xl text-center relative flex flex-col justify-between order-1 md:order-2 scale-105 bg-gradient-to-b from-amber-500/10 to-transparent`}>
+                    <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 font-black flex items-center justify-center text-xl mb-3 shadow-lg">
+                      1
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Accuracy</span>
-                      <span className="font-bold text-teal-400">{Math.round(topThree[1].avgAccuracy)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Tests</span>
-                      <span className="font-bold text-amber-400">{topThree[1].totalTests}</span>
-                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">Champion</span>
+                    <h3 className={`text-2xl font-black ${themeConfig.accent} truncate`}>
+                      {topThree[0].username || topThree[0].user?.username || "Typist"}
+                    </h3>
+                    <p className={`text-4xl font-black ${themeConfig.accent} my-3`}>
+                      {topThree[0].wpm || topThree[0].highestWpm || 0} <span className="text-xs font-normal">WPM</span>
+                    </p>
+                    <span className={`text-xs ${themeConfig.mutedText}`}>
+                      Accuracy: {topThree[0].accuracy || topThree[0].avgAccuracy || 100}%
+                    </span>
                   </div>
+                )}
+
+                {/* 3rd Place (Bronze) */}
+                {topThree[2] && (
+                  <div className={`${themeConfig.card} p-6 border-2 border-amber-700/60 shadow-xl text-center relative flex flex-col justify-between order-3`}>
+                    <div className="w-12 h-12 mx-auto rounded-full bg-amber-700 text-amber-100 font-extrabold flex items-center justify-center text-lg mb-3 shadow-md">
+                      3
+                    </div>
+                    <h3 className={`text-xl font-black ${themeConfig.bodyText} truncate`}>
+                      {topThree[2].username || topThree[2].user?.username || "Typist"}
+                    </h3>
+                    <p className="text-3xl font-extrabold text-amber-600 my-3">
+                      {topThree[2].wpm || topThree[2].highestWpm || 0} <span className="text-xs font-normal">WPM</span>
+                    </p>
+                    <span className={`text-xs ${themeConfig.mutedText}`}>
+                      Accuracy: {topThree[2].accuracy || topThree[2].avgAccuracy || 100}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Complete Rankings Table */}
+            <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>
+              <h2 className={`text-lg font-extrabold ${themeConfig.bodyText}`}>Typist Rankings</h2>
+
+              {filteredLeaderboard.length === 0 ? (
+                <div className={`p-8 text-center ${themeConfig.cardInset}`}>
+                  <p className={`text-sm ${themeConfig.mutedText}`}>
+                    No typists found matching your filter options.
+                  </p>
                 </div>
-              )}
-
-              {/* Gold - 1st Place */}
-              {topThree[0] && (
-                <div className={`order-1 md:order-2 p-7 rounded-2xl border-2 transition-all duration-300 hover:scale-[1.03] flex flex-col items-center text-center relative overflow-hidden ${
-                  isLight
-                    ? "bg-gradient-to-b from-amber-500/10 to-white border-amber-400/60 shadow-xl"
-                    : "bg-gradient-to-b from-amber-500/15 to-[#111c2d] border-amber-400/50 shadow-2xl"
-                }`}>
-                  <div className="absolute top-0 right-0 px-4 py-1 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-xs font-black rounded-bl-xl uppercase tracking-wider shadow-sm">
-                     #1 GOLD
-                  </div>
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-500 text-slate-950 font-black text-3xl flex items-center justify-center mb-3 shadow-lg shadow-amber-500/30">
-                    1
-                  </div>
-                  <h3 className="font-black text-xl text-amber-400">@{topThree[0].username}</h3>
-                  <p className={`text-xs mb-4 ${isLight ? "text-slate-500" : "text-slate-400"}`}>{topThree[0].fullname}</p>
-
-                  <div className="w-full space-y-2.5 pt-3 border-t border-amber-400/20 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-400 font-medium">Top Speed</span>
-                      <span className="font-black text-amber-400 text-lg">{Math.round(topThree[0].highestWpm)} WPM</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Accuracy</span>
-                      <span className="font-bold text-teal-400">{Math.round(topThree[0].avgAccuracy)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Tests</span>
-                      <span className="font-bold text-emerald-400">{topThree[0].totalTests}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Bronze - 3rd Place */}
-              {topThree[2] && (
-                <div className={`order-3 p-6 rounded-2xl border transition-all duration-300 hover:scale-[1.02] flex flex-col items-center text-center relative overflow-hidden ${
-                  isLight
-                    ? "bg-white border-slate-200 shadow-lg"
-                    : "bg-[#111c2d] border-slate-700/80 shadow-xl"
-                }`}>
-                  <div className="absolute top-0 right-0 px-3 py-1 bg-amber-700/80 text-amber-100 text-xs font-black rounded-bl-xl uppercase tracking-wider">
-                    #3 BRONZE
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100 font-black text-2xl flex items-center justify-center mb-3 shadow-md">
-                    3
-                  </div>
-                  <h3 className="font-bold text-lg text-emerald-400">@{topThree[2].username}</h3>
-                  <p className={`text-xs mb-4 ${isLight ? "text-slate-500" : "text-slate-400"}`}>{topThree[2].fullname}</p>
-
-                  <div className="w-full space-y-2 pt-3 border-t border-slate-200 dark:border-slate-800 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Speed</span>
-                      <span className="font-black text-emerald-400 text-base">{Math.round(topThree[2].highestWpm)} WPM</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Accuracy</span>
-                      <span className="font-bold text-teal-400">{Math.round(topThree[2].avgAccuracy)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Tests</span>
-                      <span className="font-bold text-amber-400">{topThree[2].totalTests}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Leaderboard Table (Ranks 4+) */}
-            {remainingList.length > 0 && (
-              <div className={`rounded-2xl border overflow-hidden shadow-lg ${
-                isLight ? "bg-white border-slate-200" : "bg-[#111c2d] border-slate-800"
-              }`}>
-                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 font-bold text-sm text-slate-400 uppercase tracking-wider">
-                  Full Rankings
-                </div>
+              ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className={`border-b text-xs font-bold uppercase tracking-wider ${
-                        isLight ? "bg-slate-50 text-slate-500 border-slate-200" : "bg-slate-800/40 text-slate-400 border-slate-800"
-                      }`}>
-                        <th className="px-6 py-3.5">Rank</th>
-                        <th className="px-6 py-3.5">Typist</th>
-                        <th className="px-6 py-3.5">Speed (WPM)</th>
-                        <th className="px-6 py-3.5">Avg Accuracy</th>
-                        <th className="px-6 py-3.5">Total Tests</th>
+                      <tr className={`border-b ${themeConfig.border} ${themeConfig.mutedText} font-bold uppercase tracking-wider`}>
+                        <th className="py-3 px-4 w-16">Rank</th>
+                        <th className="py-3 px-4">User</th>
+                        <th className="py-3 px-4">Speed</th>
+                        <th className="py-3 px-4">Accuracy</th>
+                        <th className="py-3 px-4">Test Count</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-sm">
-                      {remainingList.map((user, idx) => {
-                        const rankNum = idx + 4;
-                        return (
-                          <tr
-                            key={user._id || idx}
-                            className={`transition-colors ${
-                              isLight ? "hover:bg-slate-50" : "hover:bg-slate-800/50"
-                            }`}
-                          >
-                            <td className="px-6 py-4 font-black text-slate-400">
-                              #{rankNum}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="font-bold text-emerald-400">@{user.username}</div>
-                              <div className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                                {user.fullname}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 font-black text-base text-emerald-400">
-                              {Math.round(user.highestWpm)} <span className="text-xs text-slate-400 font-normal">WPM</span>
-                            </td>
-                            <td className="px-6 py-4 font-bold text-teal-400">
-                              {Math.round(user.avgAccuracy)}%
-                            </td>
-                            <td className="px-6 py-4 font-bold text-amber-400">
-                              {user.totalTests}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                    <tbody className={`divide-y ${themeConfig.border}`}>
+                      {filteredLeaderboard.map((item, idx) => (
+                        <tr key={item._id || idx} className="hover:bg-black/5 transition-colors">
+                          <td className="py-3.5 px-4 font-bold">
+                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] ${
+                              idx === 0
+                                ? "bg-amber-400 text-black font-extrabold"
+                                : idx === 1
+                                ? "bg-slate-300 text-black font-extrabold"
+                                : idx === 2
+                                ? "bg-amber-700 text-white font-extrabold"
+                                : `${themeConfig.cardInset}`
+                            }`}>
+                              {idx + 1}
+                            </span>
+                          </td>
+                          <td className={`py-3.5 px-4 font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
+                            <FiUser className={themeConfig.mutedText} />
+                            <span>{item.username || item.user?.username || "Guest Typist"}</span>
+                          </td>
+                          <td className={`py-3.5 px-4 font-black ${themeConfig.accent}`}>
+                            {item.wpm || item.highestWpm || 0} WPM
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-emerald-400">
+                            {item.accuracy || item.avgAccuracy || 100}%
+                          </td>
+                          <td className={`py-3.5 px-4 ${themeConfig.mutedText}`}>
+                            {item.totalTests || item.testsCompleted || 1} tests
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
-};
-
-export default Leaderboard;
+}

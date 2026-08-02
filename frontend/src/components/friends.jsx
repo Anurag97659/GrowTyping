@@ -1,37 +1,38 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
-import { FiArrowLeft, FiSettings, FiSearch, FiUserPlus, FiUserCheck, FiTrash2, FiBarChart2, FiSun, FiMoon } from "react-icons/fi";
+import { useTheme } from "../context/ThemeContext";
+import {
+  FiArrowLeft,
+  FiSearch,
+  FiUserPlus,
+  FiUserCheck,
+  FiTrash2,
+  FiBarChart2,
+  FiSun,
+  FiMoon,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
 
-const Friends = () => {
+export default function Friends() {
+  const navigate = useNavigate();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
+
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
-  
-  // Theme state: dark / light
-  const [theme, setTheme] = useState(() => {
-    return window.localStorage.getItem("growtyping.theme") || "dark";
-  });
 
-  // Friend details modal state
   const [selectedUserStats, setSelectedUserStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
-
-  const isLight = theme === "light";
-
-  const toggleTheme = () => {
-    const nextTheme = isLight ? "dark" : "light";
-    setTheme(nextTheme);
-    window.localStorage.setItem("growtyping.theme", nextTheme);
-  };
 
   const fetchFriends = async () => {
     try {
       setLoading(true);
-      const res = await api.get("GrowTyping/v1/users/friends");
-      setFriends(res.data.data || []);
+      const res = await api.get("/GrowTyping/v1/users/friends");
+      setFriends(res.data?.data || []);
     } catch (err) {
       console.error("Error fetching friends:", err);
     } finally {
@@ -54,237 +55,160 @@ const Friends = () => {
 
     try {
       setSearchLoading(true);
-      const res = await api.get(`GrowTyping/v1/users/search?query=${encodeURIComponent(q.trim())}`);
-      setSearchResults(res.data.data || []);
+      const res = await api.get(`/GrowTyping/v1/users/search?query=${encodeURIComponent(q.trim())}`);
+      setSearchResults(res.data?.data || []);
     } catch (err) {
       console.error("Error searching users:", err);
-      setSearchResults([]);
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const isFriend = (userId) => {
-    return friends.some((f) => f._id === userId);
-  };
-
   const handleAddFriend = async (userId) => {
-    setActionLoading((prev) => ({ ...prev, [userId]: true }));
     try {
-      await api.post("GrowTyping/v1/users/follow", { userIdToFollow: userId });
+      setActionLoading((prev) => ({ ...prev, [userId]: true }));
+      await api.post("/GrowTyping/v1/users/follow", { userIdToFollow: userId });
       await fetchFriends();
-      if (searchQuery.trim()) {
-        const res = await api.get(`GrowTyping/v1/users/search?query=${encodeURIComponent(searchQuery.trim())}`);
-        setSearchResults(res.data.data || []);
-      }
     } catch (err) {
-      const msg = err.response?.data?.message || "Failed to add friend";
-      alert(msg);
+      console.error("Error adding friend:", err);
+      alert(err.response?.data?.message || "Failed to add friend.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
   const handleRemoveFriend = async (userId) => {
-    setActionLoading((prev) => ({ ...prev, [userId]: true }));
+    if (!window.confirm("Are you sure you want to remove this friend?")) return;
     try {
-      await api.post("GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
+      setActionLoading((prev) => ({ ...prev, [userId]: true }));
+      await api.post("/GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId });
       await fetchFriends();
-      if (searchQuery.trim()) {
-        const res = await api.get(`GrowTyping/v1/users/search?query=${encodeURIComponent(searchQuery.trim())}`);
-        setSearchResults(res.data.data || []);
-      }
     } catch (err) {
       console.error("Error removing friend:", err);
+      alert(err.response?.data?.message || "Failed to remove friend.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
-  const fetchFriendStats = async (friend) => {
-    setStatsLoading(true);
+  const isAlreadyFriend = (userId) => {
+    return friends.some((f) => (f._id || f.friend?._id) === userId);
+  };
+
+  const handleViewStats = async (friendId, friendUsername) => {
     try {
-      const profileRes = await api.get(`GrowTyping/v1/users/public-profile/${friend.username}`);
-      const user = profileRes.data.data;
-
-      const [statsRes, bestRes, streakRes] = await Promise.all([
-        api.get(`GrowTyping/v1/stats/public/${user._id}`),
-        api.get(`GrowTyping/v1/stats/public-best/${user._id}`),
-        api.get(`GrowTyping/v1/stats/public-streak/${user._id}`)
-      ]);
-
+      setSelectedUserStats({ username: friendUsername, loading: true });
+      const res = await api.get(`/GrowTyping/v1/stats/public/${friendId}`);
       setSelectedUserStats({
-        user,
-        stats: statsRes.data.data || {},
-        bestRecords: bestRes.data.data || {},
-        streak: streakRes.data.data?.streak || 0
+        username: friendUsername,
+        stats: res.data?.data,
+        loading: false,
       });
     } catch (err) {
-      console.error("Error fetching user stats:", err);
-    } finally {
-      setStatsLoading(false);
+      console.error("Error fetching friend stats:", err);
+      setSelectedUserStats({
+        username: friendUsername,
+        stats: null,
+        loading: false,
+      });
     }
   };
 
   return (
-    <div
-      className={`min-h-screen font-sans transition-colors duration-300 ${
-        isLight ? "bg-slate-50 text-slate-900" : "bg-[#0b131e] text-slate-100"
-      }`}
-    >
-      {/* Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between shadow-lg ${
-        isLight ? "bg-white/80 border-slate-200" : "bg-[#0f1927]/80 border-slate-800"
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <span className="text-white font-black text-lg">GT</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-              GrowTyping Friends
+    <div className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} p-4 sm:p-8 transition-colors duration-300`}>
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header Bar */}
+        <div className={`flex items-center justify-between p-4 ${themeConfig.card} border ${themeConfig.border}`}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/typing")}
+              className={`p-2.5 ${themeConfig.buttonSecondary} flex items-center gap-2 text-sm font-semibold`}
+            >
+              <FiArrowLeft className="text-base" /> Typing Page
+            </button>
+            <h1 className={`text-xl sm:text-2xl font-extrabold tracking-tight ${themeConfig.accent}`}>
+              Friends & Community
             </h1>
-            <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-              Connect & Compete with Typists
-            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={themeId}
+              onChange={(e) => setThemeId(e.target.value)}
+              className={`px-3 py-1.5 text-xs font-medium ${themeConfig.input} cursor-pointer`}
+            >
+              {THEMES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={toggleMode}
+              className={`p-2.5 ${themeConfig.buttonSecondary} transition-all`}
+              title="Toggle Dark / Light Mode"
+            >
+              {mode === "dark" ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Light / Dark Mode Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2.5 rounded-xl border transition-all hover:scale-105 flex items-center gap-2 text-xs font-semibold ${
-              isLight
-                ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800"
-            }`}
-            title="Toggle Light/Dark Theme"
-          >
-            {isLight ? <FiMoon className="text-slate-600" size={16} /> : <FiSun className="text-amber-400" size={16} />}
-            <span>{isLight ? "Dark Mode" : "Light Mode"}</span>
-          </button>
-
-          <button
-            onClick={() => (window.location.href = "/typing")}
-            className={`p-2.5 rounded-xl border transition-all hover:scale-105 ${
-              isLight
-                ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800"
-            }`}
-            title="Back to Typing"
-          >
-            <FiArrowLeft size={18} />
-          </button>
-
-          <button
-            onClick={() => (window.location.href = "/settings")}
-            className={`p-2.5 rounded-xl border transition-all hover:scale-105 ${
-              isLight
-                ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800"
-            }`}
-            title="Settings"
-          >
-            <FiSettings size={18} />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        
-        {/* User Search Section */}
-        <section className={`mb-10 p-6 rounded-2xl border backdrop-blur-md shadow-sm ${
-          isLight
-            ? "bg-white border-slate-200"
-            : "bg-[#111c2d]/90 border-slate-800"
-        }`}>
-          <div className="flex flex-col gap-2 mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <FiSearch className="text-emerald-500" /> Find & Add Friends
-            </h2>
-            <div className={`p-3 rounded-xl border text-xs leading-relaxed flex items-center gap-2 ${
-              isLight
-                ? "bg-slate-50 border-slate-200 text-slate-600"
-                : "bg-slate-800/60 border-slate-700/60 text-slate-400"
-            }`}>
-              <span>
-                <strong>Note:</strong> Find the user with their unique User ID or Username from their profile. Adding a user makes you mutual friends instantly!
-              </span>
-            </div>
-          </div>
-
-          <div className="relative">
+        {/* Find Friends Search Box */}
+        <div className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-4`}>
+          <h2 className={`text-lg font-extrabold ${themeConfig.bodyText}`}>Search & Add Typists</h2>
+          <div className="relative max-w-xl">
+            <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
             <input
               type="text"
-              placeholder="Search users by Username or ID..."
+              placeholder="Search by username..."
               value={searchQuery}
               onChange={handleSearch}
-              className={`w-full px-4 py-3 pl-11 rounded-xl border text-sm focus:outline-none transition-all ${
-                isLight
-                  ? "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:border-emerald-500"
-                  : "bg-slate-900/80 border-slate-700 text-white placeholder-slate-500 focus:border-emerald-500"
-              }`}
+              className={`w-full pl-11 pr-4 py-3 text-xs ${themeConfig.input}`}
             />
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            {searchLoading && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
           </div>
 
-          {/* Search Results Dropdown/Grid */}
-          {searchQuery.trim() !== "" && (
-            <div className="mt-4">
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Search Results ({searchResults.length})
-              </div>
-              {searchResults.length === 0 && !searchLoading ? (
-                <p className={`text-sm py-4 text-center ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                  No users found matching "{searchQuery}"
-                </p>
+          {searchQuery && (
+            <div className="pt-2">
+              {searchLoading ? (
+                <p className={`text-xs ${themeConfig.mutedText} animate-pulse`}>Searching users...</p>
+              ) : searchResults.length === 0 ? (
+                <p className={`text-xs ${themeConfig.mutedText}`}>No typists found.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   {searchResults.map((user) => {
-                    const alreadyFriend = isFriend(user._id);
+                    const friendAlready = isAlreadyFriend(user._id);
+
                     return (
                       <div
                         key={user._id}
-                        className={`p-4 rounded-xl border flex items-center justify-between transition-all ${
-                          isLight
-                            ? "bg-slate-50 border-slate-200 hover:border-slate-300"
-                            : "bg-slate-800/50 border-slate-700/80 hover:border-slate-600"
-                        }`}
+                        className={`p-4 ${themeConfig.cardInset} border ${themeConfig.border} flex items-center justify-between rounded-xl`}
                       >
-                        <div>
-                          <div className="font-bold text-emerald-400 text-sm">@{user.username}</div>
-                          <div className={`text-xs ${isLight ? "text-slate-600" : "text-slate-400"}`}>
-                            {user.fullname}
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full ${themeConfig.card} border ${themeConfig.border} flex items-center justify-center font-bold text-xs ${themeConfig.accent}`}>
+                            {user.username?.[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className={`text-xs font-bold ${themeConfig.bodyText}`}>{user.username}</p>
+                            <p className={`text-[10px] ${themeConfig.mutedText}`}>{user.fullname || "Typist"}</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => (alreadyFriend ? handleRemoveFriend(user._id) : handleAddFriend(user._id))}
-                          disabled={actionLoading[user._id]}
-                          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                            alreadyFriend
-                              ? "bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500/25"
-                              : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
-                          }`}
-                        >
-                          {actionLoading[user._id] ? (
-                            <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                          ) : alreadyFriend ? (
-                            <>
-                              <FiUserCheck size={14} /> Remove
-                            </>
-                          ) : (
-                            <>
-                              <FiUserPlus size={14} /> Add Friend
-                            </>
-                          )}
-                        </button>
+
+                        {friendAlready ? (
+                          <button
+                            disabled
+                            className={`px-3 py-1.5 ${themeConfig.buttonSecondary} opacity-70 cursor-not-allowed text-[11px] font-bold flex items-center gap-1.5`}
+                          >
+                            <FiUserCheck className="text-emerald-400" /> Friend
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleAddFriend(user._id)}
+                            disabled={actionLoading[user._id]}
+                            className={`px-3 py-1.5 ${themeConfig.buttonPrimary} text-[11px] font-bold flex items-center gap-1.5`}
+                          >
+                            <FiUserPlus /> {actionLoading[user._id] ? "Adding..." : "Add Friend"}
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -292,201 +216,136 @@ const Friends = () => {
               )}
             </div>
           )}
-        </section>
+        </div>
 
-        {/* Friends List Section */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
-              <span>My Friends</span>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold">
-                {friends.length}
-              </span>
-            </h2>
+        {/* Friends List Grid */}
+        <div className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-4`}>
+          <div className="flex items-center justify-between">
+            <h2 className={`text-lg font-extrabold ${themeConfig.bodyText}`}>Your Friends List</h2>
+            <span className={`text-xs ${themeConfig.mutedText}`}>{friends.length} Friends</span>
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm font-semibold text-emerald-500 animate-pulse">Loading Friends...</p>
-            </div>
+            <p className={`text-xs ${themeConfig.mutedText} animate-pulse text-center p-8`}>
+              Loading friends network...
+            </p>
           ) : friends.length === 0 ? (
-            <div className={`p-12 rounded-2xl border text-center ${
-              isLight ? "bg-white border-slate-200" : "bg-[#111c2d] border-slate-800"
-            }`}>
-              <h3 className="text-lg font-bold mb-1">No friends added yet</h3>
-              <p className={`text-sm max-w-md mx-auto ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                Use the search box above with a user's ID or username to find friends and compare typing stats!
+            <div className={`p-8 text-center ${themeConfig.cardInset}`}>
+              <p className={`text-sm ${themeConfig.mutedText}`}>
+                You haven't added any friends yet. Use the search bar above to find typists!
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {friends.map((friend) => (
-                <div
-                  key={friend._id}
-                  className={`p-5 rounded-2xl border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between ${
-                    isLight
-                      ? "bg-white border-slate-200 hover:border-slate-300"
-                      : "bg-[#111c2d] border-slate-800 hover:border-slate-700"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {friends.map((item) => {
+                const friendUser = item.friend || item;
+                const fId = friendUser._id || item._id;
+
+                return (
+                  <div
+                    key={fId}
+                    className={`p-5 ${themeConfig.cardInset} border ${themeConfig.border} rounded-2xl flex flex-col justify-between space-y-4`}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
-                        {friend.username?.charAt(0).toUpperCase() || "U"}
+                      <div className={`w-10 h-10 rounded-full ${themeConfig.card} border ${themeConfig.border} flex items-center justify-center font-extrabold text-sm ${themeConfig.accent}`}>
+                        {friendUser.username?.[0]?.toUpperCase() || "F"}
                       </div>
-                      <div>
-                        <h4 className="font-bold text-base text-emerald-400">@{friend.username}</h4>
-                        <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                          {friend.fullname || "Typist"}
+                      <div className="truncate">
+                        <p className={`text-sm font-extrabold ${themeConfig.bodyText} truncate`}>
+                          {friendUser.username}
+                        </p>
+                        <p className={`text-[10px] ${themeConfig.mutedText} truncate`}>
+                          {friendUser.fullname || "GrowTyping Member"}
                         </p>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/80">
-                    <button
-                      onClick={() => fetchFriendStats(friend)}
-                      className={`flex-1 py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                        isLight
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                          : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20"
-                      }`}
-                    >
-                      <FiBarChart2 size={14} /> View Stats
-                    </button>
-
-                    <button
-                      onClick={() => handleRemoveFriend(friend._id)}
-                      disabled={actionLoading[friend._id]}
-                      className="py-2 px-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-all"
-                      title="Remove Friend"
-                    >
-                      {actionLoading[friend._id] ? (
-                        <div className="w-3.5 h-3.5 border-2 border-rose-400 border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <FiTrash2 size={14} />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        onClick={() => handleViewStats(fId, friendUser.username)}
+                        className={`flex-1 py-2 ${themeConfig.buttonSecondary} text-xs font-bold flex items-center justify-center gap-1.5`}
+                      >
+                        <FiBarChart2 /> View Stats
+                      </button>
+                      <button
+                        onClick={() => handleRemoveFriend(fId)}
+                        disabled={actionLoading[fId]}
+                        className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all"
+                        title="Remove Friend"
+                      >
+                        <FiTrash2 className="text-xs" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
-        </section>
+        </div>
+      </div>
 
-        {/* Friend Stats Details Modal */}
-        {(selectedUserStats || statsLoading) && (
-          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`w-full max-w-2xl rounded-3xl border shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto ${
-              isLight ? "bg-white border-slate-200 text-slate-900" : "bg-[#111c2d] border-slate-800 text-white"
-            }`}>
-              {statsLoading ? (
-                <div className="flex flex-col items-center py-12 gap-3">
-                  <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-sm font-semibold text-emerald-400">Loading friend stats...</p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-6">
-                    <div>
-                      <h3 className="text-2xl font-black text-emerald-400">@{selectedUserStats.user?.username}</h3>
-                      <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                        {selectedUserStats.user?.fullname}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedUserStats(null)}
-                      className="text-slate-400 hover:text-white p-2 rounded-xl text-lg font-bold"
-                    >
-                      ✕
-                    </button>
-                  </div>
+      {/* Friend Stats Modal */}
+      {selectedUserStats && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className={`${themeConfig.card} max-w-lg w-full p-6 border ${themeConfig.border} space-y-6 shadow-2xl relative`}>
+            <button
+              onClick={() => setSelectedUserStats(null)}
+              className={`absolute top-4 right-4 p-2 ${themeConfig.buttonSecondary}`}
+            >
+              <FiX className="text-base" />
+            </button>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                    <div className={`p-4 rounded-xl border text-center ${
-                      isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/60"
-                    }`}>
-                      <div className="text-2xl font-black text-emerald-400">
-                        {Math.round(selectedUserStats.stats?.avgWpm || 0)}
-                      </div>
-                      <div className="text-xs text-slate-400 font-medium mt-1">Avg WPM</div>
-                    </div>
-
-                    <div className={`p-4 rounded-xl border text-center ${
-                      isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/60"
-                    }`}>
-                      <div className="text-2xl font-black text-teal-400">
-                        {Math.round(selectedUserStats.stats?.avgAccuracy || 0)}%
-                      </div>
-                      <div className="text-xs text-slate-400 font-medium mt-1">Avg Accuracy</div>
-                    </div>
-
-                    <div className={`p-4 rounded-xl border text-center ${
-                      isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/60"
-                    }`}>
-                      <div className="text-2xl font-black text-amber-400">
-                        {selectedUserStats.stats?.totalSessions || 0}
-                      </div>
-                      <div className="text-xs text-slate-400 font-medium mt-1">Sessions</div>
-                    </div>
-
-                    <div className={`p-4 rounded-xl border text-center ${
-                      isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/60"
-                    }`}>
-                      <div className="text-2xl font-black text-orange-400">
-                        {selectedUserStats.streak} d
-                      </div>
-                      <div className="text-xs text-slate-400 font-medium mt-1">Streak</div>
-                    </div>
-                  </div>
-
-                  {/* Best Records */}
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">
-                      All-Time Best Records
-                    </h4>
-                    {Object.keys(selectedUserStats.bestRecords).length === 0 ? (
-                      <p className="text-xs text-slate-500 py-4">No test records completed yet.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {Object.entries(selectedUserStats.bestRecords).map(([type, rec]) => (
-                          <div
-                            key={type}
-                            className={`p-4 rounded-xl border ${
-                              isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/60"
-                            }`}
-                          >
-                            <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">
-                              {type} Test
-                            </div>
-                            <div className="space-y-1.5 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-slate-400">Highest WPM</span>
-                                <span className="font-bold text-emerald-400">{Math.round(rec.highestWpm || 0)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-400">Highest Accuracy</span>
-                                <span className="font-bold text-teal-400">{Math.round(rec.highestAccuracy || 0)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-400">Longest Duration</span>
-                                <span className="font-bold text-amber-400">{Math.round(rec.longestDuration || 0)}s</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full ${themeConfig.cardInset} flex items-center justify-center font-extrabold text-sm ${themeConfig.accent}`}>
+                {selectedUserStats.username?.[0]?.toUpperCase()}
+              </div>
+              <div>
+                <h3 className={`text-xl font-extrabold ${themeConfig.bodyText}`}>
+                  {selectedUserStats.username}'s Telemetry
+                </h3>
+                <p className={`text-xs ${themeConfig.mutedText}`}>Performance stats and metrics</p>
+              </div>
             </div>
+
+            {selectedUserStats.loading ? (
+              <p className={`text-xs ${themeConfig.mutedText} animate-pulse p-6 text-center`}>
+                Fetching user statistics...
+              </p>
+            ) : selectedUserStats.stats ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`${themeConfig.cardInset} p-4 text-center space-y-1`}>
+                  <p className={`text-[10px] font-bold uppercase ${themeConfig.mutedText}`}>Top Speed</p>
+                  <p className={`text-3xl font-black ${themeConfig.accent}`}>
+                    {selectedUserStats.stats?.highestWpm || selectedUserStats.stats?.topWpm || 0} WPM
+                  </p>
+                </div>
+                <div className={`${themeConfig.cardInset} p-4 text-center space-y-1`}>
+                  <p className={`text-[10px] font-bold uppercase ${themeConfig.mutedText}`}>Avg Speed</p>
+                  <p className="text-3xl font-black text-emerald-400">
+                    {Math.round(selectedUserStats.stats?.avgWpm || 0)} WPM
+                  </p>
+                </div>
+                <div className={`${themeConfig.cardInset} p-4 text-center space-y-1`}>
+                  <p className={`text-[10px] font-bold uppercase ${themeConfig.mutedText}`}>Avg Accuracy</p>
+                  <p className="text-3xl font-black text-indigo-400">
+                    {selectedUserStats.stats?.avgAccuracy ? Number(selectedUserStats.stats.avgAccuracy).toFixed(1) : 100}%
+                  </p>
+                </div>
+                <div className={`${themeConfig.cardInset} p-4 text-center space-y-1`}>
+                  <p className={`text-[10px] font-bold uppercase ${themeConfig.mutedText}`}>Total Tests</p>
+                  <p className="text-3xl font-black text-amber-400">
+                    {selectedUserStats.stats?.totalTests || selectedUserStats.stats?.totalSessions || 0}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className={`text-xs ${themeConfig.mutedText} text-center p-4`}>
+                No stats available for this user.
+              </p>
+            )}
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
-};
-
-export default Friends;
+}

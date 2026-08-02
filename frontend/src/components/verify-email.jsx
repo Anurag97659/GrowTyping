@@ -1,19 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
+import { useTheme } from "../context/ThemeContext";
+import { FiCheckCircle, FiAlertCircle, FiLoader } from "react-icons/fi";
 
-const getTheme = () =>
-  typeof window !== "undefined"
-    ? window.localStorage.getItem("growtyping.theme") || "dark"
-    : "dark";
-
-function VerifyEmail() {
+export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("Verifying your email address...");
-  const [theme] = useState(getTheme);
+  const { themeConfig } = useTheme();
 
-  const isLight = theme === "light";
   const token = searchParams.get("token");
   const id = searchParams.get("id");
 
@@ -36,7 +32,7 @@ function VerifyEmail() {
         setStatus("error");
         setMessage(
           error?.response?.data?.message ||
-            "Verification link is invalid or has expired. Please request a new one.",
+            "Verification link is invalid or has expired. Please request a new one."
         );
       }
     };
@@ -44,65 +40,38 @@ function VerifyEmail() {
     verify();
   }, [id, token]);
 
-  /* ── colour tokens ────────────────────────────────────── */
-  const bg     = isLight ? "bg-[#F8FAFC]"    : "bg-[#0D1117]";
-  const cardBg = isLight ? "bg-white"         : "bg-[#161B22]";
-  const border = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
-  const text1  = isLight ? "text-[#0F172A]"   : "text-[#E6EDF3]";
-  const text2  = isLight ? "text-[#64748B]"   : "text-[#8B949E]";
-
   return (
-    <div className={`min-h-screen ${bg} flex flex-col items-center justify-center px-4 py-10 transition-colors duration-300`}>
-
-      {/* ── Logo ── */}
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg">
-          <span className="text-white font-black text-lg">GT</span>
-        </div>
-        <h1 className={`text-sm font-bold ${text2} tracking-widest uppercase`}>GrowTyping</h1>
-      </div>
-
-      {/* ── Card ── */}
-      <div className={`w-full max-w-md ${cardBg} border ${border} rounded-2xl shadow-sm p-10 text-center`}>
-
-        {/* Status icon area */}
-        <div className="flex justify-center mb-6">
+    <div className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} flex flex-col justify-center items-center p-4 transition-colors duration-300`}>
+      <div className={`w-full max-w-md ${themeConfig.card} border ${themeConfig.border} p-8 space-y-6 shadow-2xl text-center`}>
+        <div className="flex justify-center">
           {status === "loading" && (
-            <div className="w-14 h-14 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
+            <FiLoader className={`text-4xl animate-spin ${themeConfig.accent}`} />
           )}
           {status === "success" && (
-            <div className="w-14 h-14 rounded-full bg-emerald-600/15 border border-emerald-500/30 flex items-center justify-center">
-              <svg className="w-7 h-7 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <FiCheckCircle className="text-5xl text-emerald-400" />
           )}
           {status === "error" && (
-            <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-              <svg className="w-7 h-7 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <FiAlertCircle className="text-5xl text-red-400" />
           )}
         </div>
 
-        <h2 className={`text-2xl font-bold ${text1} mb-3`}>Email Verification</h2>
+        <h1 className={`text-2xl font-extrabold tracking-tight ${themeConfig.bodyText}`}>
+          Email Verification
+        </h1>
 
-        <p className={`text-sm leading-relaxed ${status === "success" ? "text-emerald-500" : status === "error" ? "text-red-400" : text2}`}>
+        <p className={`text-xs ${themeConfig.mutedText} leading-relaxed`}>
           {message}
         </p>
 
-        {status !== "loading" && (
+        <div className="pt-2">
           <Link
             to="/login"
-            className="inline-block mt-8 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-all duration-200 shadow-sm"
+            className={`inline-block w-full py-3 ${themeConfig.buttonPrimary} text-xs font-bold uppercase tracking-wider transition-all`}
           >
-            Go to Sign In
+            Go to Login
           </Link>
-        )}
+        </div>
       </div>
     </div>
   );
 }
-
-export default VerifyEmail;

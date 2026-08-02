@@ -2,117 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Global font ───────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+/* ─── Global Base Setup ───────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-body {
+html, body {
+  margin: 0;
+  padding: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
 }
 
-/* ─── Smooth scrollbar (chromium) ───────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 148, 158, 0.3);
-  border-radius: 99px;
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(139, 148, 158, 0.5); }
-
-/* ─── Light-theme overrides for dashboard/friends/leaderboard ─ */
-
-/* These pages use the class `gt-light` on the root div */
-
-.gt-light .bg-white\/3,
-.gt-light .bg-white\/5 {
-  background-color: rgba(255, 255, 255, 0.85);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
 }
 
-.gt-light .bg-black\/30 {
-  background-color: rgba(255, 255, 255, 0.8);
+/* ─── Terminal Scanlines Effect ───────────────────────────── */
+body[data-theme="terminal"]::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 999;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.7;
 }
 
-.gt-light .border-white\/5,
-.gt-light .border-white\/10,
-.gt-light .border-white\/20 {
-  border-color: rgba(226, 232, 240, 0.8);
+/* ─── Single Line Blinking Cursor ────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.gt-light .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(226, 232, 240, 0.5);
+.gt-single-cursor {
+  display: inline-block;
+  width: 2.5px;
+  height: 1.15em;
+  vertical-align: -0.15em;
+  background-color: currentColor;
+  animation: blink 0.9s infinite ease-in-out;
+  margin-left: -1px;
+  margin-right: -1px;
 }
 
-.gt-light .text-white,
-.gt-light .text-gray-300 {
-  color: #0f172a;
+/* ─── Glassmorphism Backdrop Blur Utilities ─────────────── */
+.glass-panel {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-.gt-light .text-gray-400 {
-  color: #475569;
+/* ─── Micro Animations ────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
 }
 
-.gt-light .text-gray-500,
-.gt-light .text-gray-600 {
-  color: #64748b;
-}
-
-.gt-light input,
-.gt-light select {
-  color: #0f172a;
-}
-
-.gt-light input::placeholder {
-  color: #94a3b8;
-}
-
-.gt-light .hover\:bg-white\/5:hover,
-.gt-light .hover\:bg-white\/10:hover {
-  background-color: rgba(248, 250, 252, 0.98);
-}
-
-/* Legacy class support */
-.dashboard-light .bg-white\/3,
-.dashboard-light .bg-white\/5 {
-  background-color: rgba(255, 255, 255, 0.85);
-}
-
-.dashboard-light .bg-black\/30 {
-  background-color: rgba(255, 255, 255, 0.8);
-}
-
-.dashboard-light .border-white\/5,
-.dashboard-light .border-white\/10,
-.dashboard-light .border-white\/20 {
-  border-color: rgba(226, 232, 240, 0.8);
-}
-
-.dashboard-light .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(226, 232, 240, 0.5);
-}
-
-.dashboard-light .text-white,
-.dashboard-light .text-gray-300 {
-  color: #0f172a;
-}
-
-.dashboard-light .text-gray-400 {
-  color: #475569;
-}
-
-.dashboard-light .text-gray-500,
-.dashboard-light .text-gray-600 {
-  color: #64748b;
-}
-
-.dashboard-light input,
-.dashboard-light select {
-  color: #0f172a;
-}
-
-.dashboard-light input::placeholder {
-  color: #94a3b8;
-}
-
-.dashboard-light .hover\:bg-white\/5:hover,
-.dashboard-light .hover\:bg-white\/10:hover {
-  background-color: rgba(248, 250, 252, 0.98);
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }

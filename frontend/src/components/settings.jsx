@@ -1,13 +1,27 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api, { clearAccessToken } from "../lib/api";
-import { FiEdit, FiKey, FiTrash2, FiLogOut, FiSun, FiMoon, FiArrowLeft } from "react-icons/fi";
+import { useTheme } from "../context/ThemeContext";
+import {
+  FiArrowLeft,
+  FiUser,
+  FiEdit,
+  FiKey,
+  FiTrash2,
+  FiLogOut,
+  FiSun,
+  FiMoon,
+  FiCheck,
+  FiLayers,
+  FiCalendar,
+  FiMapPin,
+  FiHash,
+} from "react-icons/fi";
 
-const getTheme = () =>
-  typeof window !== "undefined"
-    ? window.localStorage.getItem("growtyping.theme") || "dark"
-    : "dark";
+export default function Settings() {
+  const navigate = useNavigate();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
 
-const Profile = () => {
   const [profile, setProfile] = useState({
     _id: "",
     username: "",
@@ -17,15 +31,7 @@ const Profile = () => {
     joined: "",
   });
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState(getTheme);
-
-  const isLight = theme === "light";
-
-  const toggleTheme = () => {
-    const next = isLight ? "dark" : "light";
-    setTheme(next);
-    window.localStorage.setItem("growtyping.theme", next);
-  };
+  const [activeTab, setActiveTab] = useState("appearance");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -39,7 +45,7 @@ const Profile = () => {
           fullname: data.fullname || "",
           email: data.email || "",
           address: data.address || "",
-          joined: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "",
+          joined: data.createdAt ? new Date(data.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Recently",
         });
       } catch (err) {
         console.error("Error fetching profile:", err);
@@ -63,7 +69,7 @@ const Profile = () => {
       await api.post("GrowTyping/v1/users/deleteuser");
       clearAccessToken();
       alert("Your account has been deleted.");
-      window.location.href = "/";
+      navigate("/");
     } catch (err) {
       console.error("Error deleting account:", err);
       alert("Failed to delete account. Please try again.");
@@ -73,208 +79,249 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await api.post("GrowTyping/v1/users/logout");
-      clearAccessToken();
-      alert("Logged out successfully.");
-      window.location.href = "/login";
     } catch (err) {
       console.error("Error logging out:", err);
-      alert("Failed to log out. Please try again.");
+    } finally {
+      clearAccessToken();
+      alert("Logged out successfully.");
+      navigate("/login");
     }
   };
-
-  const handleChangePassword = () => {
-    if (profile.username.toLowerCase() === "avasanam") {
-      alert("Password changes are disabled for this user.");
-      return;
-    }
-    window.location.href = "/change-password";
-  };
-
-  /* ── colour tokens ────────────────────────────────────── */
-  const bg      = isLight ? "bg-[#F8FAFC]"    : "bg-[#0D1117]";
-  const cardBg  = isLight ? "bg-white"         : "bg-[#161B22]";
-  const border  = isLight ? "border-[#E2E8F0]" : "border-[#30363D]";
-  const divider = isLight ? "divide-[#E2E8F0]" : "divide-[#30363D]";
-  const text1   = isLight ? "text-[#0F172A]"   : "text-[#E6EDF3]";
-  const text2   = isLight ? "text-[#64748B]"   : "text-[#8B949E]";
-  const hoverRow = isLight ? "hover:bg-[#F8FAFC]" : "hover:bg-[#21262D]/60";
-
-  if (loading) {
-    return (
-      <div className={`flex items-center justify-center min-h-screen ${bg} transition-colors duration-300`}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
-          <p className="text-emerald-500 text-sm font-semibold tracking-wider animate-pulse">
-            Loading profile...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const avatarInitial = profile.username ? profile.username[0].toUpperCase() : "?";
 
   return (
-    <div className={`min-h-screen ${bg} font-sans transition-colors duration-300`}>
-
-      {/* ── Sticky Header ── */}
-      <header className={`sticky top-0 z-40 backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between shadow-sm ${
-        isLight ? "bg-white/90 border-[#E2E8F0]" : "bg-[#0D1117]/90 border-[#30363D]"
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm">
-            <span className="text-white font-black text-sm">GT</span>
+    <div className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} p-4 sm:p-8 transition-colors duration-300`}>
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header Bar */}
+        <div className={`flex items-center justify-between p-4 ${themeConfig.card} border ${themeConfig.border}`}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/typing")}
+              className={`p-2.5 ${themeConfig.buttonSecondary} flex items-center gap-2 text-sm font-semibold`}
+            >
+              <FiArrowLeft className="text-base" /> Typing Page
+            </button>
+            <h1 className={`text-xl sm:text-2xl font-extrabold tracking-tight ${themeConfig.accent}`}>
+              Settings & Customization
+            </h1>
           </div>
-          <div>
-            <h1 className={`text-base font-bold ${text1}`}>Account Settings</h1>
-            <p className={`text-xs ${text2}`}>Manage your profile and preferences</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2">
           <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-lg border transition-all flex items-center gap-1.5 text-xs font-semibold ${
-              isLight
-                ? "bg-white border-[#E2E8F0] text-[#0F172A] hover:bg-[#F1F5F9]"
-                : "bg-[#21262D] border-[#30363D] text-[#E6EDF3] hover:bg-[#30363D]"
-            }`}
+            onClick={toggleMode}
+            className={`p-2.5 ${themeConfig.buttonSecondary} transition-all`}
+            title="Toggle Dark / Light Mode"
           >
-            {isLight ? <FiMoon size={14} /> : <FiSun size={14} className="text-amber-400" />}
-            <span className="hidden sm:inline">{isLight ? "Dark" : "Light"}</span>
-          </button>
-          <button
-            onClick={() => (window.location.href = "/typing")}
-            className={`p-2 rounded-lg border transition-all ${
-              isLight
-                ? "bg-white border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
-                : "bg-[#21262D] border-[#30363D] text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[#30363D]"
-            }`}
-            title="Back to Typing"
-          >
-            <FiArrowLeft size={16} />
+            {mode === "dark" ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
           </button>
         </div>
-      </header>
 
-      {/* ── Main content ── */}
-      <main className="max-w-2xl mx-auto px-4 py-10">
-
-        {/* ── Avatar + name ── */}
-        <div className="flex flex-col items-center text-center mb-10">
-          <div className="w-20 h-20 rounded-2xl bg-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-md mb-4">
-            {avatarInitial}
-          </div>
-          <h2 className={`text-2xl font-bold ${text1}`}>{profile.fullname || profile.username}</h2>
-          <p className={`text-sm ${text2} mt-1`}>@{profile.username}</p>
-          <div className="mt-3 inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3.5 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-emerald-400 text-xs font-semibold">Active Member</span>
-          </div>
+        {/* Settings Navigation Tabs */}
+        <div className={`flex gap-2 p-1.5 ${themeConfig.card} border ${themeConfig.border} overflow-x-auto`}>
+          <button
+            onClick={() => setActiveTab("appearance")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "appearance"
+                ? themeConfig.buttonPrimary
+                : `${themeConfig.mutedText} hover:${themeConfig.bodyText}`
+            }`}
+          >
+            <FiLayers className="text-sm" /> Appearance & Themes
+          </button>
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "profile"
+                ? themeConfig.buttonPrimary
+                : `${themeConfig.mutedText} hover:${themeConfig.bodyText}`
+            }`}
+          >
+            <FiUser className="text-sm" /> Profile Details
+          </button>
         </div>
 
-        <div className="space-y-4">
-
-          {/* ── Account Details card ── */}
-          <div className={`${cardBg} border ${border} rounded-xl overflow-hidden shadow-sm`}>
-            <div className={`flex items-center justify-between px-6 py-4 border-b ${border}`}>
-              <h3 className={`text-sm font-bold ${text1}`}>Account Details</h3>
-              <button
-                onClick={() => (window.location.href = "/edit-profile")}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
-              >
-                <FiEdit size={12} />
-                Edit Profile
-              </button>
-            </div>
-
-            <div className={`divide-y ${divider}`}>
-              {[
-                { label: "User ID",    value: profile._id },
-                { label: "Username",   value: profile.username },
-                { label: "Full Name",  value: profile.fullname },
-                { label: "Email",      value: profile.email },
-                { label: "Address",    value: profile.address || "Not provided" },
-                { label: "Joined On",  value: profile.joined },
-              ].map(({ label, value }) => (
-                <div
-                  key={label}
-                  className={`flex items-center justify-between px-6 py-3.5 ${hoverRow} transition-colors duration-150`}
-                >
-                  <span className={`text-xs font-semibold ${text2} uppercase tracking-wider`}>{label}</span>
-                  <span className={`text-sm font-medium ${text1} max-w-xs text-right truncate`}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Security card ── */}
-          <div className={`${cardBg} border ${border} rounded-xl overflow-hidden shadow-sm`}>
-            <div className={`px-6 py-4 border-b ${border}`}>
-              <h3 className={`text-sm font-bold ${text1}`}>Security</h3>
-            </div>
-            <div className="px-6 py-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-lg border flex items-center justify-center ${
-                  isLight ? "bg-[#F1F5F9] border-[#E2E8F0]" : "bg-[#21262D] border-[#30363D]"
-                }`}>
-                  <FiKey size={15} className="text-amber-400" />
-                </div>
+        {/* Tab 1: Appearance & Theme Selector Grid */}
+        {activeTab === "appearance" && (
+          <div className="space-y-6">
+            <div className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-4`}>
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <p className={`text-sm font-semibold ${text1}`}>Password</p>
-                  <p className={`text-xs ${text2}`}>Keep your account secure</p>
+                  <h2 className={`text-lg font-extrabold ${themeConfig.bodyText}`}>
+                    Universal Theme Gallery
+                  </h2>
+                  <p className={`text-xs ${themeConfig.mutedText}`}>
+                    Select an art style. Themes apply universally across all pages.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-bold ${themeConfig.mutedText}`}>Mode:</span>
+                  <button
+                    onClick={toggleMode}
+                    className={`px-4 py-2 text-xs font-bold ${themeConfig.buttonSecondary} flex items-center gap-2 capitalize`}
+                  >
+                    {mode === "dark" ? <FiMoon /> : <FiSun />}
+                    <span>{mode} Mode</span>
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={handleChangePassword}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 ${
-                  isLight
-                    ? "bg-[#F1F5F9] border-[#E2E8F0] text-[#0F172A] hover:border-amber-400 hover:text-amber-600"
-                    : "bg-[#21262D] border-[#30363D] text-[#8B949E] hover:border-amber-500/50 hover:text-amber-400"
-                }`}
-              >
-                <FiKey size={12} />
-                Change Password
-              </button>
+
+              {/* Grid of Theme Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-4">
+                {THEMES.map((theme) => {
+                  const isSelected = themeId === theme.id;
+                  return (
+                    <div
+                      key={theme.id}
+                      onClick={() => setThemeId(theme.id)}
+                      className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                        isSelected
+                          ? `${themeConfig.border} ${themeConfig.accent} ring-2 ring-indigo-500/40 scale-[1.02]`
+                          : `${themeConfig.cardInset} border-transparent opacity-80 hover:opacity-100`
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-emerald-500 text-black flex items-center justify-center text-xs font-bold">
+                          <FiCheck />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className={`text-base font-extrabold ${themeConfig.bodyText} mb-1`}>
+                          {theme.name}
+                        </h3>
+                        <p className={`text-xs ${themeConfig.mutedText} leading-relaxed`}>
+                          {theme.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-2">
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${
+                          isSelected ? themeConfig.buttonPrimary : themeConfig.cardInset
+                        }`}>
+                          {isSelected ? "Active Theme" : "Apply Theme"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
+        )}
 
-          {/* ── Account Actions card ── */}
-          <div className={`${cardBg} border ${border} rounded-xl overflow-hidden shadow-sm`}>
-            <div className={`px-6 py-4 border-b ${border}`}>
-              <h3 className={`text-sm font-bold ${text1}`}>Account Actions</h3>
+        {/* Tab 2: Profile Details & Danger Zone */}
+        {activeTab === "profile" && (
+          <div className="space-y-6">
+            <div className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-6`}>
+              <h2 className={`text-lg font-extrabold ${themeConfig.bodyText}`}>
+                User Profile Details
+              </h2>
+
+              {loading ? (
+                <p className={`text-sm ${themeConfig.mutedText} animate-pulse`}>
+                  Loading account profile...
+                </p>
+              ) : (
+                <div className="space-y-4 max-w-2xl">
+                  {/* User ID */}
+                  <div className={`${themeConfig.cardInset} p-4 space-y-1`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText} flex items-center gap-1.5`}>
+                      <FiHash className="text-xs" /> User ID
+                    </p>
+                    <p className={`text-sm font-mono font-bold ${themeConfig.accent}`}>
+                      {profile._id || "Not Available"}
+                    </p>
+                  </div>
+
+                  {/* Username & Full Name */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className={`${themeConfig.cardInset} p-4 space-y-1`}>
+                      <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText} flex items-center gap-1.5`}>
+                        <FiUser className="text-xs" /> Username
+                      </p>
+                      <p className={`text-base font-extrabold ${themeConfig.bodyText}`}>
+                        {profile.username || "Guest"}
+                      </p>
+                    </div>
+
+                    <div className={`${themeConfig.cardInset} p-4 space-y-1`}>
+                      <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText} flex items-center gap-1.5`}>
+                        <FiUser className="text-xs" /> Full Name
+                      </p>
+                      <p className={`text-base font-extrabold ${themeConfig.bodyText}`}>
+                        {profile.fullname || "Not set"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Email & Joined Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className={`${themeConfig.cardInset} p-4 space-y-1`}>
+                      <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>
+                        Email Address
+                      </p>
+                      <p className={`text-sm font-extrabold ${themeConfig.bodyText} truncate`}>
+                        {profile.email || "Not set"}
+                      </p>
+                    </div>
+
+                    <div className={`${themeConfig.cardInset} p-4 space-y-1`}>
+                      <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText} flex items-center gap-1.5`}>
+                        <FiCalendar className="text-xs" /> Joined On
+                      </p>
+                      <p className={`text-sm font-extrabold ${themeConfig.bodyText}`}>
+                        {profile.joined}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className={`${themeConfig.cardInset} p-4 space-y-1`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText} flex items-center gap-1.5`}>
+                      <FiMapPin className="text-xs" /> Address / Location
+                    </p>
+                    <p className={`text-sm font-extrabold ${themeConfig.bodyText}`}>
+                      {profile.address || "Not provided"}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    <button
+                      onClick={() => navigate("/edit-profile")}
+                      className={`px-4 py-2.5 ${themeConfig.buttonPrimary} text-xs font-bold flex items-center gap-2`}
+                    >
+                      <FiEdit className="text-sm" /> Edit Profile Details
+                    </button>
+                    <button
+                      onClick={() => navigate("/change-password")}
+                      className={`px-4 py-2.5 ${themeConfig.buttonSecondary} text-xs font-bold flex items-center gap-2`}
+                    >
+                      <FiKey className="text-sm" /> Change Password
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="px-6 py-5 flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleLogout}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-semibold transition-all duration-200 ${
-                  isLight
-                    ? "bg-[#F1F5F9] border-[#E2E8F0] text-[#0F172A] hover:border-[#CBD5E1]"
-                    : "bg-[#21262D] border-[#30363D] text-[#E6EDF3] hover:bg-[#30363D]"
-                }`}
-              >
-                <FiLogOut size={14} />
-                Sign Out
-              </button>
-              <button
-                onClick={handleDeleteUser}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-semibold transition-all duration-200 bg-red-500/8 border-red-500/20 text-red-400 hover:bg-red-500/15 hover:border-red-500/40"
-              >
-                <FiTrash2 size={14} />
-                Delete Account
-              </button>
+
+            {/* Danger Zone */}
+            <div className={`p-6 ${themeConfig.card} border border-red-500/30 space-y-4`}>
+              <h2 className="text-lg font-extrabold text-red-500">Account Security & Actions</h2>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleLogout}
+                  className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center gap-2 transition-all"
+                >
+                  <FiLogOut className="text-sm" /> Sign Out
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all shadow-md"
+                >
+                  <FiTrash2 className="text-sm" /> Delete Account
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* ── Footer note ── */}
-          <p className={`text-center text-xs ${text2} pt-2 pb-6`}>
-            Member since {profile.joined} — GrowTyping
-          </p>
-
-        </div>
-      </main>
+        )}
+      </div>
     </div>
   );
-};
-
-export default Profile;
+}

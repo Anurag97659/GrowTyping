@@ -264,6 +264,10 @@ const updateDetails=asyncHandler(async(req,res)=>{
     if(!username && !email && !fullname && !address){
         throw new ApiError(400,"At least one field is required to update");
    }
+   const user1=await User.findById(req.user?._id);
+   if(user1?.username?.toLowerCase() === "avasanam"){
+        throw new ApiError(403,"This feature is disabled for this user.");
+   }
     const user=await User.findByIdAndUpdate(
         req.user?._id,
         {

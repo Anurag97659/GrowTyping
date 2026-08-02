@@ -1,16 +1,13 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api, { setAccessToken } from "../lib/api";
+import { useTheme } from "../context/ThemeContext";
+import { FiArrowLeft, FiSun, FiMoon, FiLock, FiUser, FiMail } from "react-icons/fi";
 
-/* ─────────────────────────────────────────────────────────
-   Shared helper: read / write the single global theme key
-───────────────────────────────────────────────────────── */
-const getTheme = () =>
-  typeof window !== "undefined"
-    ? window.localStorage.getItem("growtyping.theme") || "dark"
-    : "dark";
+export default function Login() {
+  const navigate = useNavigate();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
 
-function Login() {
   const [username, setusername] = useState("");
   const [password, setpassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,15 +16,6 @@ function Login() {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordUsername, setForgotPasswordUsername] = useState("");
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
-  const [theme, setTheme] = useState(getTheme);
-
-  const isLight = theme === "light";
-
-  const toggleTheme = () => {
-    const next = isLight ? "dark" : "light";
-    setTheme(next);
-    window.localStorage.setItem("growtyping.theme", next);
-  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -44,13 +32,13 @@ function Login() {
         setLoginError(res.data.error);
       } else {
         setAccessToken(res.data?.data?.accessToken);
-        window.location.href = "/typing";
+        navigate("/typing");
       }
     } catch (error) {
       setLoginError(
         error?.response?.data?.message ||
           error?.message ||
-          "Unable to sign in. Please try again.",
+          "Unable to sign in. Please try again."
       );
     } finally {
       setLoading(false);
@@ -86,200 +74,153 @@ function Login() {
     }
   };
 
-  /* ── colour tokens ───────────────────────────────────────── */
-  const bg       = isLight ? "bg-[#F8FAFC]"     : "bg-[#0D1117]";
-  const cardBg   = isLight ? "bg-white"          : "bg-[#161B22]";
-  const border   = isLight ? "border-[#E2E8F0]"  : "border-[#30363D]";
-  const text1    = isLight ? "text-[#0F172A]"    : "text-[#E6EDF3]";
-  const text2    = isLight ? "text-[#64748B]"    : "text-[#8B949E]";
-  const inputBg  = isLight ? "bg-[#F1F5F9]"     : "bg-[#21262D]";
-  const inputBdr = isLight ? "border-[#E2E8F0]"  : "border-[#30363D]";
-
-  const inputCls = `w-full px-4 py-3 ${inputBg} border ${inputBdr} rounded-lg ${text1}
-    placeholder-[#8B949E] focus:outline-none focus:ring-2 focus:ring-emerald-500/40
-    focus:border-emerald-500 transition-all duration-200 text-sm font-medium`;
-
-  const labelCls = `block text-xs font-semibold ${text2} mb-1.5 uppercase tracking-widest`;
-
   return (
-    <div className={`min-h-screen ${bg} flex flex-col items-center justify-center px-4 py-10 transition-colors duration-300`}>
-
-      {/* ── Theme toggle ── */}
-      <div className="absolute top-5 right-5">
+    <div className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} flex flex-col justify-center items-center p-4 transition-colors duration-300`}>
+      {/* Top Navigation */}
+      <div className="w-full max-w-md flex items-center justify-between mb-6">
         <button
-          onClick={toggleTheme}
-          className={`px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-            isLight
-              ? "bg-white border-[#E2E8F0] text-[#0F172A] hover:bg-[#F1F5F9]"
-              : "bg-[#21262D] border-[#30363D] text-[#E6EDF3] hover:bg-[#30363D]"
-          }`}
+          onClick={() => navigate("/typing")}
+          className={`p-2.5 ${themeConfig.buttonSecondary} flex items-center gap-2 text-xs font-bold`}
         >
-          {isLight ? "Dark Mode" : "Light Mode"}
+          <FiArrowLeft className="text-sm" /> Back to Typing
         </button>
-      </div>
 
-      {/* ── Logo ── */}
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg">
-          <span className="text-white font-black text-lg">GT</span>
+        <div className="flex items-center gap-2">
+          <select
+            value={themeId}
+            onChange={(e) => setThemeId(e.target.value)}
+            className={`px-2.5 py-1.5 text-xs font-medium ${themeConfig.input} cursor-pointer`}
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={toggleMode}
+            className={`p-2.5 ${themeConfig.buttonSecondary}`}
+            title="Toggle Dark / Light Mode"
+          >
+            {mode === "dark" ? <FiSun className="text-xs" /> : <FiMoon className="text-xs" />}
+          </button>
         </div>
-        <h1 className={`text-sm font-bold ${text2} tracking-widest uppercase`}>GrowTyping</h1>
       </div>
 
-      {/* ── Card ── */}
-      <div className={`w-full max-w-md ${cardBg} border ${border} rounded-2xl shadow-sm p-8`}>
-        <h2 className={`text-2xl font-bold ${text1} mb-1`}>Sign in</h2>
-        <p className={`text-sm ${text2} mb-7`}>Welcome back — enter your credentials below.</p>
+      {/* Main Login Card */}
+      <div className={`w-full max-w-md ${themeConfig.card} border ${themeConfig.border} p-8 space-y-6 shadow-2xl`}>
+        <div className="text-center space-y-1">
+          <h1 className={`text-3xl font-extrabold tracking-tight ${themeConfig.accent}`}>
+            Welcome Back
+          </h1>
+          <p className={`text-xs ${themeConfig.mutedText}`}>
+            Sign in to track your speed, rankings, and stats
+          </p>
+        </div>
 
-        <form onSubmit={submit} className="space-y-5">
-          {loginError && (
-            <div
-              role="alert"
-              className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400"
-            >
-              {loginError}
+        {loginError && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs text-center font-medium">
+            {loginError}
+          </div>
+        )}
+
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1">
+            <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Username</label>
+            <div className="relative">
+              <FiUser className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+              <input
+                type="text"
+                required
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setusername(e.target.value)}
+                className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
+              />
             </div>
-          )}
-
-          <div>
-            <label className={labelCls}>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setusername(e.target.value)}
-              className={inputCls}
-              placeholder="Enter your username"
-              required
-            />
           </div>
 
-          <div>
-            <label className={labelCls}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setpassword(e.target.value)}
-              className={inputCls}
-              placeholder="Enter your password"
-              required
-            />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className={`text-xs font-bold ${themeConfig.mutedText}`}>Password</label>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className={`text-[11px] font-semibold ${themeConfig.accent} hover:underline`}
+              >
+                Forgot Password?
+              </button>
+            </div>
+            <div className="relative">
+              <FiLock className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${themeConfig.mutedText}`} />
+              <input
+                type="password"
+                required
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setpassword(e.target.value)}
+                className={`w-full pl-10 pr-4 py-3 text-xs ${themeConfig.input}`}
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-lg text-sm font-bold tracking-wide transition-all duration-200 mt-2
-              ${loading
-                ? "bg-emerald-700/50 cursor-not-allowed text-emerald-300"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm hover:shadow-emerald-600/30"
-              }`}
+            className={`w-full py-3 ${themeConfig.buttonPrimary} text-xs font-bold tracking-wider uppercase transition-all shadow-md`}
           >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
-                Signing in...
-              </span>
-            ) : (
-              "Sign In"
-            )}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={() => setShowForgotPassword(true)}
-            className={`text-sm ${text2} hover:text-emerald-500 transition-colors duration-200 font-medium`}
-          >
-            Forgot your password?
-          </button>
-        </div>
-
-        <div className={`mt-6 pt-6 border-t ${border} text-center`}>
-          <p className={`text-sm ${text2}`}>
+        <div className="text-center pt-2">
+          <p className={`text-xs ${themeConfig.mutedText}`}>
             Don't have an account?{" "}
-            <Link
-              to="/registration"
-              className="font-semibold text-emerald-500 hover:text-emerald-400 transition-colors"
-            >
-              Create account
+            <Link to="/registration" className={`font-bold ${themeConfig.accent} hover:underline`}>
+              Register here
             </Link>
           </p>
         </div>
       </div>
 
-      {/* ── Forgot Password Modal ── */}
+      {/* Forgot Password Modal */}
       {showForgotPassword && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-50">
-          <div className={`w-full max-w-md ${cardBg} border ${border} rounded-2xl shadow-xl p-8`}>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className={`text-xl font-bold ${text1}`}>Reset Password</h3>
-                <p className={`text-sm ${text2} mt-1`}>Enter your email or username to continue.</p>
-              </div>
-              <button
-                onClick={() => { setShowForgotPassword(false); setForgotPasswordEmail(""); setForgotPasswordUsername(""); }}
-                className={`w-8 h-8 rounded-lg border ${border} ${text2} hover:text-red-400 flex items-center justify-center text-base font-bold transition-colors`}
-                aria-label="Close"
-              >
-                x
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className={`${themeConfig.card} max-w-sm w-full p-6 border ${themeConfig.border} space-y-4 shadow-2xl`}>
+            <h3 className={`text-lg font-extrabold ${themeConfig.bodyText}`}>Reset Password</h3>
+            <p className={`text-xs ${themeConfig.mutedText}`}>
+              Enter your email address or username to receive password reset instructions.
+            </p>
 
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label className={labelCls}>Email</label>
-                <input
-                  type="email"
-                  value={forgotPasswordEmail}
-                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                  className={inputCls}
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div className={`flex items-center gap-3 py-1`}>
-                <div className={`flex-1 h-px ${isLight ? "bg-[#E2E8F0]" : "bg-[#30363D]"}`}></div>
-                <span className={`text-xs font-semibold ${text2} uppercase tracking-wider`}>or</span>
-                <div className={`flex-1 h-px ${isLight ? "bg-[#E2E8F0]" : "bg-[#30363D]"}`}></div>
-              </div>
-
-              <div>
-                <label className={labelCls}>Username</label>
-                <input
-                  type="text"
-                  value={forgotPasswordUsername}
-                  onChange={(e) => setForgotPasswordUsername(e.target.value)}
-                  className={inputCls}
-                  placeholder="Enter your username"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowForgotPassword(false); setForgotPasswordEmail(""); setForgotPasswordUsername(""); }}
-                  className={`flex-1 py-2.5 rounded-lg border ${border} ${text2} text-sm font-semibold hover:bg-[${isLight ? "#F1F5F9" : "#21262D"}] transition-all`}
-                >
-                  Cancel
-                </button>
+            <form onSubmit={handleForgotPassword} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Username (optional)"
+                value={forgotPasswordUsername}
+                onChange={(e) => setForgotPasswordUsername(e.target.value)}
+                className={`w-full p-3 text-xs ${themeConfig.input}`}
+              />
+              <input
+                type="email"
+                placeholder="Email Address (optional)"
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                className={`w-full p-3 text-xs ${themeConfig.input}`}
+              />
+              <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
                   disabled={forgotPasswordLoading}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all
-                    ${forgotPasswordLoading
-                      ? "bg-emerald-700/50 cursor-not-allowed text-emerald-300"
-                      : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                    }`}
+                  className={`flex-1 py-2.5 ${themeConfig.buttonPrimary} text-xs font-bold`}
                 >
-                  {forgotPasswordLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
-                      Sending...
-                    </span>
-                  ) : (
-                    "Send Reset Link"
-                  )}
+                  {forgotPasswordLoading ? "Sending..." : "Send Request"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className={`px-4 py-2.5 ${themeConfig.buttonSecondary} text-xs font-bold`}
+                >
+                  Cancel
                 </button>
               </div>
             </form>
@@ -289,5 +230,3 @@ function Login() {
     </div>
   );
 }
-
-export default Login;

@@ -167,7 +167,8 @@ const getDashboardStats = asyncHandler(async(req, res) =>{
                 totalSessions:{ $sum: 1 },
                 totalTime:{ $sum: "$duration" },
                 avgWpm:{ $avg: "$wpm" },
-                avgAccuracy:{ $avg: "$accuracy" }
+                avgAccuracy:{ $avg: "$accuracy" },
+                highestWpm:{ $max: "$wpm" }
             }
         }
     ]);
@@ -176,7 +177,8 @@ const getDashboardStats = asyncHandler(async(req, res) =>{
         totalSessions: 0,
         totalTime: 0,
         avgWpm: 0,
-        avgAccuracy: 0
+        avgAccuracy: 0,
+        highestWpm: 0
     };
 
     await setCache(cacheKey, result, 300); // 5 min TTL
