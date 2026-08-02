@@ -11,6 +11,7 @@ import {
     getTypingHistory,
     getAverageAccuracyByType,
     getUserPublicStats,
+    getUserPublicTelemetry,
     getUserBestRecords,
     getUserTypingStreak,
     getLeaderboard
@@ -30,6 +31,7 @@ router.route("/history").get(verifyJWT, getTypingHistory);
 router.route("/average-accuracy").get(verifyJWT, getAverageAccuracyByType);
 router.route("/leaderboard").get(getLeaderboard);
 
+router.route("/public-telemetry/:userId").get(getUserPublicTelemetry);
 router.route("/public/:userId").get(getUserPublicStats);
 router.route("/public-best/:userId").get(getUserBestRecords);
 router.route("/public-streak/:userId").get(getUserTypingStreak);

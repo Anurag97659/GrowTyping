@@ -491,6 +491,124 @@ const getUserPublicStats = asyncHandler(async (req, res) => {
     );
 });
 
+const getUserPublicTelemetry = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, "A valid user ID is required");
+    }
+
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+    const range = req.query.range || "allTime";
+    const rangeMatch = { user: userIdObj, ...getDateMatch(range) };
+    const allTimeMatch = { user: userIdObj };
+
+    const [overview, allTimeRecords, rangeRecords, keyStats] = await Promise.all([
+        TypingStat.aggregate([
+            { $match: rangeMatch },
+            {
+                $group: {
+                    _id: null,
+                    totalSessions: { $sum: 1 },
+                    totalTime: { $sum: "$duration" },
+                    avgWpm: { $avg: "$wpm" },
+                    avgAccuracy: { $avg: "$accuracy" },
+                    highestWpm: { $max: "$wpm" }
+                }
+            }
+        ]),
+        TypingStat.aggregate([
+            { $match: allTimeMatch },
+            {
+                $group: {
+                    _id: "$testType",
+                    highestWpm: { $max: "$wpm" },
+                    highestAccuracy: { $max: "$accuracy" },
+                    longestDuration: { $max: "$duration" }
+                }
+            }
+        ]),
+        TypingStat.aggregate([
+            { $match: rangeMatch },
+            {
+                $group: {
+                    _id: "$testType",
+                    highestWpm: { $max: "$wpm" },
+                    highestAccuracy: { $max: "$accuracy" },
+                    totalTests: { $sum: 1 }
+                }
+            }
+        ]),
+        TypingStat.aggregate([
+            { $match: rangeMatch },
+            {
+                $project: {
+                    keyStats: {
+                        $cond: [
+                            { $gt: [{ $size: { $ifNull: ["$keyStats", []] } }, 0] },
+                            "$keyStats",
+                            { $ifNull: ["$weakKeys", []] }
+                        ]
+                    }
+                }
+            },
+            { $unwind: "$keyStats" },
+            {
+                $project: {
+                    key: { $toLower: "$keyStats.key" },
+                    attempts: { $ifNull: ["$keyStats.attempts", 0] },
+                    mistakes: {
+                        $ifNull: [
+                            "$keyStats.mistakeCount",
+                            { $ifNull: ["$keyStats.count", 1] }
+                        ]
+                    }
+                }
+            },
+            { $match: { key: { $regex: "^[a-z]$" } } },
+            {
+                $group: {
+                    _id: "$key",
+                    attempts: { $sum: "$attempts" },
+                    mistakes: { $sum: "$mistakes" }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ])
+    ]);
+
+    const recordsByType = (records) => Object.fromEntries(
+        records.map((record) => [
+            record._id,
+            Object.fromEntries(
+                Object.entries(record).filter(([key]) => key !== "_id")
+            )
+        ])
+    );
+
+    const heatmap = keyStats.map((keyStat) => ({
+        key: keyStat._id,
+        attempts: keyStat.attempts,
+        mistakes: keyStat.mistakes,
+        errorRate: keyStat.attempts > 0
+            ? Number(((keyStat.mistakes / keyStat.attempts) * 100).toFixed(1))
+            : null
+    }));
+
+    return res.status(200).json(new ApiResponse(200, {
+        overview: overview[0] || {
+            totalSessions: 0,
+            totalTime: 0,
+            avgWpm: 0,
+            avgAccuracy: 0,
+            highestWpm: 0
+        },
+        allTimeBestRecords: recordsByType(allTimeRecords),
+        rangeBestRecords: recordsByType(rangeRecords),
+        heatmap
+    }, "User public telemetry fetched successfully"));
+});
+
 const getUserBestRecords = asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
@@ -637,6 +755,7 @@ export {
     getTypingHistory,
     getAverageAccuracyByType,
     getUserPublicStats,
+    getUserPublicTelemetry,
     getUserBestRecords,
     getUserTypingStreak,
     getLeaderboard
