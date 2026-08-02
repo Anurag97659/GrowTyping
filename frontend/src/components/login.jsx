@@ -6,7 +6,7 @@ import { FiArrowLeft, FiSun, FiMoon, FiLock, FiUser, FiMail } from "react-icons/
 
 export default function Login() {
   const navigate = useNavigate();
-  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES, applyThemeFromData } = useTheme();
 
   const [username, setusername] = useState("");
   const [password, setpassword] = useState("");
@@ -32,6 +32,8 @@ export default function Login() {
         setLoginError(res.data.error);
       } else {
         setAccessToken(res.data?.data?.accessToken);
+        // Instantly restore the user's saved theme from the login response (no extra API call)
+        applyThemeFromData(res.data?.data?.user);
         navigate("/typing");
       }
     } catch (error) {

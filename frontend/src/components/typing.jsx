@@ -81,7 +81,7 @@ const generateText = (count = 200, mode = "normal") =>
 
 export default function TypingPage() {
   const navigate = useNavigate();
-  const { themeId, mode, themeConfig, THEMES, setThemeId, toggleMode } = useTheme();
+  const { themeId, mode, themeConfig, THEMES, setThemeId, toggleMode, setMode } = useTheme();
 
   const [username, setUsername] = useState("Guest");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -107,9 +107,12 @@ export default function TypingPage() {
       console.error("Logout API failed:", err);
     } finally {
       clearAccessToken();
+      // Reset to default guest theme and dark mode
+      setThemeId('glassmorphism');
+      setMode('dark');
       setLoggedIn(false);
-      setUsername("Guest");
-      navigate("/login");
+      setUsername('Guest');
+      navigate('/login');
     }
   };
 

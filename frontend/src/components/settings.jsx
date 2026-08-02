@@ -79,6 +79,13 @@ export default function Settings() {
   const handleLogout = async () => {
     try {
       await api.post("GrowTyping/v1/users/logout");
+      clearAccessToken();
+      // Reset to default guest theme
+      setThemeId('glassmorphism');
+      // Ensure dark mode for guests
+      // Using setMode directly because we only need to change the mode state
+      // The ThemeContext provides setMode setter
+      setMode('dark');
     } catch (err) {
       console.error("Error logging out:", err);
     } finally {
