@@ -1,51 +1,55 @@
 # GrowTyping
 
-GrowTyping is a full-stack typing practice application for improving typing speed, accuracy, and key-level consistency. It combines timed exercises with saved performance analytics, replayable tests, high-performance Redis caching, and a responsive dashboard.
-### **Live Demo:** [GrowTyping Demo](https://growtyping-1.onrender.com/) || **Demo username and password = Avasanam && 123456789**
+GrowTyping is a full-stack typing practice platform designed to improve typing speed, accuracy, and key-level consistency. What sets GrowTyping apart is its **per-key performance analysis**: it tracks every keystroke error, generates an interactive visual keyboard heatmap, and pinpoints your **Top 5 Weak Keys** so you can focus practice where it matters most. It also features customizable timed exercises, performance analytics, replayable tests, friend stats, global leaderboards, high-performance Redis caching, and custom theme engines.
+
+### Live Demo
+[GrowTyping Demo](https://growtyping-1.onrender.com/)  
+**Demo Credentials:** Username: `Avasanam` | Password: `123456789`
+
+---
 
 ## Features
 
-- Timed typing tests: 15 seconds, 30 seconds, 60 seconds, and custom tests.
-- Text modes: Normal, Punctuation, Numbers, Symbols, and All.
-- Live WPM and accuracy feedback while typing.
-- Per-key mistake tracking with a keyboard heatmap and weak-key analysis.
-- Replay a saved test using its original passage and duration.
-- High-Performance Caching: Redis integration with automatic fallback for user profiles, heavy aggregation stats, and global leaderboards.
-- Modular Theme Container: Extracted theme configurations into a separate container (`src/config/themes.js`) with instant local storage caching—eliminating all theme rendering delays.
-- Dashboard charts for WPM, accuracy, daily progress, history, streaks, and best records.
-- History pagination with a Load More action.
-- User accounts, email verification, profile management, and password reset.
-- Follow users and view public typing profiles.
-- Dashboard light/current theme switch and persisted typing-page themes.
+- **Typing Engine**: Timed tests (15s, 30s, 60s, custom), text modes (Normal, Punctuation, Numbers, Symbols), live WPM/accuracy tracking, and test replay.
+- **Key Analysis & Heatmap (Unique Feature)**: Deep key-level mistake tracking that pinpoints your **Top 5 Weak Keys** and visualizes keystroke accuracy with an interactive **Keyboard Heatmap**.
+-  **Authentication & Security**: JWT-based auth (Access & Refresh tokens), email verification, password reset, and **Google OAuth 2.0** single sign-on.
+- **Social & Leaderboards**: Global leaderboards, public user profiles, user follow system, and friend stats comparison.
+-  **Analytics & Insights**: Interactive charts for WPM/accuracy trends, daily activity, streaks, best records, and paginated test history.
+-  **Performance & Themes**: High-performance Redis caching with automatic database fallback, plus instant persistent theme switching.
+
+---
 
 ## Technology Stack
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React, Vite, Tailwind CSS, Axios |
-| Backend | Node.js, Express |
-| Database | MongoDB with Mongoose |
-| Caching & Performance | Redis (ioredis) with DB Fallback |
-| Authentication | JWT-based API authentication |
-| Email | Nodemailer |
+| **Frontend** | React, Vite, Tailwind CSS, Axios, Chart.js |
+| **Backend** | Node.js, Express.js |
+| **Database** | MongoDB with Mongoose ORM |
+| **Caching** | Redis (`ioredis`) with graceful MongoDB fallback |
+| **Authentication** | JWT (JSON Web Tokens), Google OAuth 2.0 |
+| **Email Service** | Nodemailer (SMTP) |
 
+---
 
-## Local Setup
+##  Local Setup
 
 ### Prerequisites
 
-- Node.js 20 or later
-- MongoDB database or MongoDB Atlas connection string
-- Redis Server (optional, graceful fallback to direct database query if offline)
+- **Node.js**: v20 or later
+- **MongoDB**: Local MongoDB instance or MongoDB Atlas URI
+- **Redis Server**: Optional (gracefully falls back to direct database queries if offline)
 
-### 1. Configure and run the backend
+---
+
+### 1. Backend Setup
 
 ```bash
 cd Backend
-npm install 
+npm install
 ```
 
-Create `Backend/.env` with the required values:
+Create `Backend/.env` file:
 
 ```env
 PORT=8000
@@ -56,47 +60,57 @@ ACCESS_TOKEN_SECRET=replace_with_a_secure_secret
 ACCESS_TOKEN_EXPIRY=1d
 REFRESH_TOKEN_SECRET=replace_with_a_secure_secret
 REFRESH_TOKEN_EXPIRY=8d
-FRONTEND_URL=http://localhost:5173 
-SMTP_HOST= enter_smtp_host
-SMTP_PORT= enter_port_number
+FRONTEND_URL=http://localhost:5173
+
+# Email Settings (Optional for verification & reset)
+SMTP_HOST=your_smtp_host
+SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER= xyz
-SMTP_PASS= your_app_password
-MAIL_FROM= xyz
+SMTP_USER=your_email
+SMTP_PASS=your_app_password
+MAIL_FROM=your_email
+
+# Google OAuth Setup (Optional)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/GrowTyping/v1/users/oauth/google/callback
 ```
 
-Add SMTP variables only when email verification and password reset emails are required. Then start the API:
+Start the backend development server:
 
 ```bash
 npm run dev
 ```
 
-### 2. Configure and run the frontend
+---
+
+### 2. Frontend Setup
 
 ```bash
 cd ../frontend
 npm install
 ```
 
-Create `frontend/.env`:
+Create `frontend/.env` file:
 
 ```env
 VITE_REACT_APP_API=http://localhost:8000/
 ```
 
-Start the standard client:
+Start the frontend development server:
 
 ```bash
 npm run dev:5173
 ```
 
-To run two accounts independently during local development, start a second client in another terminal:
-
-```bash
-npm run dev:5174
-```
+> **Tip:** To test two user accounts concurrently during local development, start a second client instance in another terminal:
+> ```bash
+> npm run dev:5174
+> ```
 
 Open `http://localhost:5173` or `http://localhost:5174` in your browser.
+
+---
 
 ## Available Scripts
 
@@ -104,36 +118,29 @@ Open `http://localhost:5173` or `http://localhost:5174` in your browser.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start Vite on its default port |
-| `npm run dev:5173` | Start the first local frontend instance |
-| `npm run dev:5174` | Start the second local frontend instance |
-| `npm run build` | Create a production build |
+| `npm run dev` | Start Vite on default port |
+| `npm run dev:5173` | Start first local frontend client |
+| `npm run dev:5174` | Start second local frontend client |
+| `npm run build` | Generate production build |
 
 ### Backend
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start the API with Nodemon |
-| `npm start` | Start the API with Node.js |
+| `npm run dev` | Start API server with Nodemon |
+| `npm start` | Start API server with Node.js |
 
-## Usage
+---
 
-1. Create and verify an account, then sign in.
-2. Choose a test duration and text mode on the typing page.
-3. Start typing to begin the timer and record live metrics.
-4. Review the dashboard for trend charts, keyboard heatmap, weak keys, and history.
-5. Use Replay from typing history to retake a saved test.
+## Google OAuth Configuration
 
-## Security Notes
+To enable Google Sign-In:
+1. Create OAuth 2.0 Credentials in the [Google Cloud Console](https://console.cloud.google.com/).
+2. Add the authorized redirect URI:
+   ```text
+   http://localhost:8000/GrowTyping/v1/users/oauth/google/callback
+   ```
+3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` in `Backend/.env`.
 
-- Do not commit `.env` files, database connection strings, SMTP credentials, or JWT secrets.
-- Use strong secrets and secure HTTPS settings for production deployments.
-# Google OAuth setup
+---
 
-Google sign-in is configured through environment variables in `Backend/.env` (copy `Backend/.env.example` for the OAuth entries). The Google Cloud OAuth client must include this exact authorized redirect URI:
-
-```text
-http://localhost:8000/GrowTyping/v1/users/oauth/google/callback
-```
-
-For production, change `GOOGLE_REDIRECT_URI` to your public backend URL with the same path, set `FRONTEND_URL` and `CORS_ORIGIN` to your public frontend URL, and add the same callback URL in Google Cloud.
