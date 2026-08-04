@@ -20,38 +20,26 @@ import {
 } from "react-icons/fi";
 import { useTheme } from "../context/ThemeContext";
 
+
 const WORDS = [
-  "a", "an", "the", "I", "you", "he", "she", "we", "they", "it", "me", "him", "her", "us", "them",
-  "my", "your", "his", "our", "their", "mine", "yours", "in", "on", "at", "with", "for", "from",
-  "by", "about", "to", "into", "over", "under", "between", "and", "but", "or", "so", "because",
-  "if", "when", "while", "as", "than", "like", "after", "before", "during", "without", "am", "is",
-  "are", "was", "were", "have", "has", "had", "do", "does", "did", "say", "says", "said", "go",
-  "goes", "went", "make", "makes", "made", "know", "knows", "knew", "see", "sees", "saw", "take",
-  "takes", "took", "come", "comes", "came", "think", "thinks", "thought", "get", "gets", "got",
-  "give", "gives", "gave", "feel", "feels", "felt", "look", "looks", "looked", "walk", "walks",
-  "walked", "run", "runs", "ran", "read", "reads", "write", "writes", "wrote", "play", "plays",
-  "played", "watch", "watches", "watched", "listen", "listens", "listened", "eat", "eats", "ate",
-  "drink", "drinks", "drank", "sleep", "sleeps", "slept", "study", "studies", "studied", "teach",
-  "teaches", "taught", "buy", "buys", "bought", "sell", "sells", "sold", "call", "calls",
-  "called", "help", "helps", "helped", "man", "woman", "child", "boy", "girl", "baby", "adult",
-  "person", "mother", "father", "brother", "sister", "son", "daughter", "friend", "teacher",
-  "student", "doctor", "nurse", "patient", "manager", "employee", "leader", "athlete", "artist",
-  "musician", "actor", "dancer", "author", "writer", "poet", "painter", "car", "bike", "bus",
-  "train", "plane", "ship", "truck", "house", "building", "room", "apartment", "office", "school",
-  "hospital", "door", "window", "wall", "floor", "roof", "garden", "tree", "flower", "plant",
-  "rock", "mountain", "book", "pen", "pencil", "paper", "notebook", "computer", "phone", "screen",
-  "keyboard", "mouse", "table", "chair", "desk", "bed", "sofa", "lamp", "clock", "picture",
-  "bag", "box", "backpack", "shirt", "shoe", "hat", "coat", "pants", "dress", "skirt", "tie",
-  "apple", "banana", "orange", "lemon", "grape", "strawberry", "watermelon", "peach", "pear",
-  "cherry", "tomato", "potato", "carrot", "onion", "garlic", "rice", "wheat", "bread", "chicken",
-  "beef", "fish", "cheese", "butter", "egg", "honey", "salt", "sugar", "water", "coffee", "tea",
-  "milk", "juice", "quick", "slow", "small", "large", "big", "tiny", "short", "tall", "thin",
-  "thick", "wide", "long", "round", "new", "old", "young", "ancient", "modern", "fresh", "clean",
-  "dirty", "bright", "dark", "light", "strong", "weak", "soft", "hard", "smooth", "rough",
-  "happy", "sad", "calm", "excited", "brave", "funny", "serious", "beautiful", "hot", "cold",
-  "warm", "cool", "loud", "quiet", "sweet", "rich", "free", "rare", "quickly", "slowly",
-  "carefully", "easily", "happily", "silently", "well", "always", "never", "often", "sometimes",
-  "usually", "rarely", "today", "yesterday", "tomorrow", "now", "soon", "later", "early", "late"
+  "the", "be", "of", "and", "a", "to", "in", "he", "have", "it", "that", "for", "they", "with",
+  "as", "not", "on", "she", "at", "by", "this", "we", "you", "do", "but", "from", "or", "which",
+  "one", "would", "all", "will", "there", "say", "who", "make", "when", "can", "more", "if", "no",
+  "man", "out", "other", "so", "what", "time", "up", "go", "about", "than", "into", "could", "state",
+  "only", "new", "year", "some", "take", "come", "these", "know", "see", "use", "get", "like",
+  "then", "first", "any", "work", "now", "may", "such", "give", "over", "think", "most", "even",
+  "find", "day", "also", "after", "way", "many", "must", "look", "before", "great", "back",
+  "through", "long", "where", "much", "should", "well", "people", "down", "own", "just", "because",
+  "good", "each", "those", "feel", "seem", "how", "high", "too", "place", "little", "world", "very",
+  "still", "nation", "hand", "old", "life", "tell", "write", "become", "here", "show", "house",
+  "both", "between", "need", "mean", "call", "develop", "under", "last", "right", "move", "thing",
+  "general", "school", "never", "same", "another", "begin", "while", "number", "part", "turn",
+  "real", "leave", "might", "want", "point", "form", "off", "child", "few", "small", "since",
+  "against", "ask", "late", "home", "interest", "large", "person", "end", "open", "public",
+  "follow", "during", "present", "without", "again", "hold", "govern", "around", "possible",
+  "head", "consider", "word", "program", "problem", "however", "lead", "system", "set", "order",
+  "eye", "plan", "run", "keep", "face", "fact", "group", "play", "stand", "increase", "early",
+  "course", "change", "help", "line"
 ];
 
 const PUNCTUATION_MARKS = [",", ".", "!", "?", ":", ";"];
@@ -78,6 +66,86 @@ const generateText = (count = 200, mode = "normal") =>
       return token;
     })
     .join(" ");
+
+
+export function calculateGrowtypeStats(text, typedChars, totalKeystrokes, elapsedMinutes) {
+  if (!text || elapsedMinutes <= 0) {
+    return { wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0, incorrectChars: 0, totalTyped: 0 };
+  }
+
+  let rawCorrect = 0;
+  let rawIncorrect = 0;
+
+  typedChars.forEach((item) => {
+    if (item.correct) {
+      rawCorrect++;
+    } else {
+      rawIncorrect++;
+    }
+  });
+
+  let netCorrectChars = 0;
+  const words = text.split(" ");
+  let charIdx = 0;
+
+  for (let w = 0; w < words.length; w++) {
+    const word = words[w];
+    const wordLen = word.length;
+    
+    if (charIdx >= typedChars.length) break;
+
+    let wordTypedChars = [];
+    let endIdx = charIdx;
+    while (endIdx < typedChars.length && text[endIdx] !== " ") {
+      wordTypedChars.push(typedChars[endIdx]);
+      endIdx++;
+    }
+
+    const isCurrentWord = (endIdx === typedChars.length);
+    const hasSpaceAfter = (endIdx < typedChars.length && text[endIdx] === " ");
+
+    if (isCurrentWord) {
+      let correctInActive = 0;
+      for (let i = 0; i < wordTypedChars.length; i++) {
+        if (wordTypedChars[i].correct) {
+          correctInActive++;
+        }
+      }
+      netCorrectChars += correctInActive;
+    } else {
+      let wordIs100PercentCorrect = (wordTypedChars.length === wordLen);
+      for (let i = 0; i < wordTypedChars.length; i++) {
+        if (!wordTypedChars[i].correct) {
+          wordIs100PercentCorrect = false;
+          break;
+        }
+      }
+      if (hasSpaceAfter && (!typedChars[endIdx] || !typedChars[endIdx].correct)) {
+        wordIs100PercentCorrect = false;
+      }
+
+      if (wordIs100PercentCorrect) {
+        netCorrectChars += wordLen + (hasSpaceAfter ? 1 : 0);
+      }
+    }
+
+    charIdx = endIdx + (hasSpaceAfter ? 1 : 0);
+  }
+
+  const wpm = Math.max(0, Math.round((netCorrectChars / 5) / elapsedMinutes));
+  const rawWpm = Math.max(0, Math.round((typedChars.length / 5) / elapsedMinutes));
+  const totalPressed = totalKeystrokes || typedChars.length || 1;
+  const accuracy = Math.min(100, Math.max(0, Number(((rawCorrect / totalPressed) * 100).toFixed(1))));
+
+  return {
+    wpm,
+    rawWpm,
+    accuracy,
+    correctChars: rawCorrect,
+    incorrectChars: rawIncorrect,
+    totalTyped: totalPressed,
+  };
+}
 
 export default function TypingPage() {
   const navigate = useNavigate();
@@ -107,7 +175,6 @@ export default function TypingPage() {
       console.error("Logout API failed:", err);
     } finally {
       clearAccessToken();
-      // Reset to default guest theme and dark mode
       setThemeId('glassmorphism');
       setMode('dark');
       setLoggedIn(false);
@@ -129,7 +196,6 @@ export default function TypingPage() {
     checkLogin();
   }, []);
 
-  // Initialize testType state directly from queued replay (if present)
   const [testType, setTestType] = useState(() => {
     const replay = queuedReplayRef.current;
     if (replay?.testType && ["15s", "30s", "60s", "custom"].includes(replay.testType)) {
@@ -141,7 +207,6 @@ export default function TypingPage() {
   const [textMode, setTextMode] = useState("normal");
   const durationMap = useMemo(() => ({ "15s": 15, "30s": 30, "60s": 60, custom: 0 }), []);
 
-  // Initialize text state directly from queued replay text (if present)
   const [text, setText] = useState(() => {
     const replay = queuedReplayRef.current;
     if (replay && typeof replay.testText === "string" && replay.testText.trim().length > 0) {
@@ -154,31 +219,30 @@ export default function TypingPage() {
   });
 
   const [typedChars, setTypedChars] = useState([]);
+  const typedCharsRef = useRef(typedChars);
+  typedCharsRef.current = typedChars;
+
   const [timeLeft, setTimeLeft] = useState(() => durationMap[queuedReplayRef.current?.testType] || 30);
   const timerRef = useRef(null);
   const startedRef = useRef(false);
   const finishedRef = useRef(false);
 
-  // Ref to always hold the current text string to avoid stale closure issues in finishTest / setInterval
   const textRef = useRef(text);
   textRef.current = text;
 
-  const correctRef = useRef(0);
-  const incorrectRef = useRef(0);
-  const totalRef = useRef(0);
   const savedRef = useRef(false);
   const weakKeysRef = useRef({});
   const keyStatsRef = useRef({});
   const startTimeRef = useRef(null);
+  const totalKeystrokesRef = useRef(0);
   const finalDurationRef = useRef(null);
+  const finalStatsRef = useRef({ wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0, incorrectChars: 0, totalTyped: 0 });
   const appliedResetRef = useRef(`${testType}:${textMode}`);
 
   const resetTest = useCallback(
     () => {
       clearInterval(timerRef.current);
       timerRef.current = null;
-
-      // Clear replay reference on manual reset so new random text is generated
       queuedReplayRef.current = null;
 
       const newText =
@@ -189,15 +253,15 @@ export default function TypingPage() {
       textRef.current = newText;
       setText(newText);
       setTypedChars([]);
+      typedCharsRef.current = [];
       setTimeLeft(durationMap[testType]);
       startedRef.current = false;
       finishedRef.current = false;
       savedRef.current = false;
       startTimeRef.current = null;
+      totalKeystrokesRef.current = 0;
       finalDurationRef.current = null;
-      correctRef.current = 0;
-      incorrectRef.current = 0;
-      totalRef.current = 0;
+      finalStatsRef.current = { wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0, incorrectChars: 0, totalTyped: 0 };
       weakKeysRef.current = {};
       keyStatsRef.current = {};
     },
@@ -232,28 +296,25 @@ export default function TypingPage() {
     if (savedRef.current) return;
     savedRef.current = true;
 
-    let duration;
-    if (testType === "custom") {
-      const elapsedMs = Date.now() - startTimeRef.current;
-      duration = Math.max(1, Math.ceil(elapsedMs / 1000));
-    } else {
-      duration = durationMap[testType];
-    }
+    const now = performance.now();
+    const startTime = startTimeRef.current || now - 1000;
+    const elapsedMs = Math.max(100, now - startTime);
+    const durationInSeconds = elapsedMs / 1000;
+    const elapsedMinutes = durationInSeconds / 60;
+
+    const duration = testType === "custom" ? Math.max(1, Math.round(durationInSeconds)) : durationMap[testType];
+    const stats = calculateGrowtypeStats(textRef.current || text, typedCharsRef.current, totalKeystrokesRef.current, elapsedMinutes);
 
     finalDurationRef.current = duration;
-    const minutes = duration / 60;
-    const wpm = minutes > 0 ? Math.round(correctRef.current / 5 / minutes) : 0;
-    const accuracy = totalRef.current
-      ? Number(((correctRef.current / totalRef.current) * 100).toFixed(2))
-      : 0;
+    finalStatsRef.current = { ...stats, duration };
 
     const payload = {
-      wpm,
-      accuracy,
+      wpm: stats.wpm,
+      accuracy: stats.accuracy,
       duration,
-      charactersTyped: totalRef.current,
-      correctChars: correctRef.current,
-      incorrectChars: incorrectRef.current,
+      charactersTyped: stats.totalTyped,
+      correctChars: stats.correctChars,
+      incorrectChars: stats.incorrectChars,
       testType,
       testText: textRef.current || text,
       weakKeys: Object.entries(weakKeysRef.current).map(([key, count]) => ({
@@ -300,50 +361,69 @@ export default function TypingPage() {
     tabPressedRef.current = false;
 
     if (finishedRef.current) return;
+
     if (e.key === "Backspace") {
+      totalKeystrokesRef.current++;
       if (!typedChars.length) return;
       setTypedChars((prev) => prev.slice(0, -1));
       return;
     }
+
     if (e.key.length !== 1 || typedChars.length >= text.length) return;
+
     if (!startedRef.current) {
       startedRef.current = true;
-      startTimeRef.current = Date.now();
+      startTimeRef.current = performance.now();
     }
     if (testType !== "custom") {
       startTimer();
     }
-    const expected = text[typedChars.length];
-    const isCorrect = e.key === expected;
-    const key = /^[a-z]$/i.test(expected) ? expected.toLowerCase() : null;
 
-    totalRef.current++;
+    totalKeystrokesRef.current++;
+    const currentIdx = typedChars.length;
+    const expected = text[currentIdx];
+
+    
+    if (e.key === " " && expected !== " ") {
+      const nextSpaceIdx = text.indexOf(" ", currentIdx);
+      if (nextSpaceIdx !== -1) {
+        const skippedChars = [];
+        for (let i = currentIdx; i < nextSpaceIdx; i++) {
+          skippedChars.push({ char: text[i], correct: false, skipped: true });
+        }
+        skippedChars.push({ char: " ", correct: false });
+        const newTyped = [...typedChars, ...skippedChars];
+        setTypedChars(newTyped);
+        if (testType === "custom" && newTyped.length >= text.length) {
+          finishedRef.current = true;
+          finishTest();
+        }
+        return;
+      }
+    }
+
+    const isCorrect = (e.key === expected);
+    const key = /^[a-z]$/i.test(expected) ? expected.toLowerCase() : null;
 
     if (key) {
       keyStatsRef.current[key] ??= { attempts: 0, mistakeCount: 0 };
       keyStatsRef.current[key].attempts++;
     }
 
-    if (isCorrect) {
-      correctRef.current++;
-    } else {
-      incorrectRef.current++;
-      if (key) {
-        weakKeysRef.current[key] = (weakKeysRef.current[key] || 0) + 1;
-        keyStatsRef.current[key].mistakeCount++;
-      }
+    if (!isCorrect && key) {
+      weakKeysRef.current[key] = (weakKeysRef.current[key] || 0) + 1;
+      keyStatsRef.current[key].mistakeCount++;
     }
 
     const newTyped = [...typedChars, { char: e.key, correct: isCorrect }];
     setTypedChars(newTyped);
 
-    if (testType === "custom" && newTyped.length === text.length) {
+    if (testType === "custom" && newTyped.length >= text.length) {
       finishedRef.current = true;
       finishTest();
     }
   };
 
-  // Render centered lines with charsPerLine set to 65 to ensure ZERO text clipping on left or right
   const renderedLines = useMemo(() => {
     if (!text) return null;
     const charsPerLine = 65;
@@ -604,11 +684,11 @@ export default function TypingPage() {
           <div className={`${themeConfig.card} max-w-xl w-full mx-auto overflow-hidden shadow-2xl border ${themeConfig.border}`}>
             <div className={`p-6 border-b ${themeConfig.border} text-center`}>
               <p className={`text-xs font-bold uppercase tracking-widest ${themeConfig.accent} mb-2 flex items-center justify-center gap-2`}>
-                {correctRef.current / totalRef.current > 0.95 ? (
+                {finalStatsRef.current.accuracy > 95 ? (
                   <>
                     <FiStar className="text-amber-400 text-base" /> Exceptional Performance
                   </>
-                ) : correctRef.current / totalRef.current > 0.85 ? (
+                ) : finalStatsRef.current.accuracy > 85 ? (
                   <>
                     <FiCheckCircle className="text-emerald-400 text-base" /> Great Job
                   </>
@@ -628,7 +708,10 @@ export default function TypingPage() {
                     Speed (WPM)
                   </p>
                   <p className={`text-4xl font-black ${themeConfig.accent}`}>
-                    {Math.round(correctRef.current / 5 / (finalDurationRef.current / 60))}
+                    {finalStatsRef.current.wpm}
+                  </p>
+                  <p className={`text-[11px] mt-1 ${themeConfig.mutedText}`}>
+                    Raw: <span className="font-bold">{finalStatsRef.current.rawWpm}</span> WPM
                   </p>
                 </div>
 
@@ -637,7 +720,7 @@ export default function TypingPage() {
                     Accuracy
                   </p>
                   <p className="text-4xl font-black text-emerald-400">
-                    {((correctRef.current / (totalRef.current || 1)) * 100).toFixed(1)}%
+                    {finalStatsRef.current.accuracy}%
                   </p>
                 </div>
               </div>
@@ -645,19 +728,19 @@ export default function TypingPage() {
               <div className="grid grid-cols-4 gap-2 mb-6 text-center text-xs">
                 <div className={`${themeConfig.cardInset} p-3`}>
                   <p className="text-emerald-400 font-semibold mb-1">Correct</p>
-                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{correctRef.current}</p>
+                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{finalStatsRef.current.correctChars}</p>
                 </div>
                 <div className={`${themeConfig.cardInset} p-3`}>
                   <p className="text-red-400 font-semibold mb-1">Mistakes</p>
-                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{incorrectRef.current}</p>
+                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{finalStatsRef.current.incorrectChars}</p>
                 </div>
                 <div className={`${themeConfig.cardInset} p-3`}>
                   <p className={`${themeConfig.mutedText} font-semibold mb-1`}>Duration</p>
-                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{finalDurationRef.current}s</p>
+                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{finalStatsRef.current.duration}s</p>
                 </div>
                 <div className={`${themeConfig.cardInset} p-3`}>
                   <p className={`${themeConfig.mutedText} font-semibold mb-1`}>Total Keys</p>
-                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{totalRef.current}</p>
+                  <p className={`text-lg font-bold ${themeConfig.bodyText}`}>{finalStatsRef.current.totalTyped}</p>
                 </div>
               </div>
 
@@ -682,3 +765,4 @@ export default function TypingPage() {
     </div>
   );
 }
+
