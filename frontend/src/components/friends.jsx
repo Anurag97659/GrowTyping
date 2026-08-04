@@ -27,6 +27,7 @@ const KEYBOARD_ROWS = [
 ];
 const STAT_RANGES = [
   { id: "today", label: "Today" },
+  { id: "lastDay", label: "Last Day" },
   { id: "lastWeek", label: "Last Week" },
   { id: "lastMonth", label: "Last Month" },
   { id: "thisYear", label: "This Year" },

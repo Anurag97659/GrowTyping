@@ -27,6 +27,7 @@ const KEYBOARD_ROWS = [
 
 const RANGES = [
   { id: "today", label: "Today" },
+  { id: "lastDay", label: "Last Day" },
   { id: "lastWeek", label: "Last Week" },
   { id: "lastMonth", label: "Last Month" },
   { id: "thisYear", label: "This Year" },
@@ -403,7 +404,11 @@ export default function Dashboard() {
                   </span>
                   <span className={`text-xs font-semibold ${themeConfig.mutedText}`}>WPM</span>
                 </div>
-                <p className={`text-[11px] ${themeConfig.mutedText} mt-2`}>All-time highest</p>
+                <p className={`text-[11px] ${themeConfig.mutedText} mt-2`}>
+                  {selectedRange === "allTime"
+                    ? "All-time highest"
+                    : `${RANGES.find((r) => r.id === selectedRange)?.label || selectedRange} highest`}
+                </p>
               </div>
 
               {/* Card 2: Average Speed */}
@@ -809,12 +814,15 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* All-Time Best Records Cards */}
-            {Object.keys(bestRecords).length > 0 && (
-              <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>
-                <h2 className={`text-lg font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
-                  <FiAward className="text-amber-400 text-xl" /> All-Time Best Records
-                </h2>
+            {/* Best Records Cards */}
+            <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>
+              <h2 className={`text-lg font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
+                <FiAward className="text-amber-400 text-xl" />{" "}
+                {selectedRange === "allTime"
+                  ? "All-Time Best Records"
+                  : `${RANGES.find((r) => r.id === selectedRange)?.label || selectedRange}'s Best Records`}
+              </h2>
+              {Object.keys(bestRecords).length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Object.entries(bestRecords).map(([type, record]) => (
                     <div key={type} className={`${themeConfig.cardInset} p-5 space-y-3 border ${themeConfig.border}`}>
@@ -844,8 +852,12 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className={`text-xs ${themeConfig.mutedText} py-4 text-center`}>
+                  No best records recorded for this time range. Complete tests to set new records!
+                </p>
+              )}
+            </div>
 
             {/* Keyboard Accuracy Heatmap Section with Fixed Tooltip Position */}
             <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>

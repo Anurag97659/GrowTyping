@@ -384,11 +384,12 @@ const getTypingStreak = asyncHandler(async(req, res) =>{
 });
 
 const getTypingHistory = asyncHandler(async(req, res) =>{
+    const userIdObj = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
     const query = {
-        user: req.user?._id,
+        user: userIdObj,
         ...dateMatch
     };
 
