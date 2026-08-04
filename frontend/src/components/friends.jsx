@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useTheme } from "../context/ThemeContext";
@@ -14,6 +14,10 @@ import {
   FiX,
   FiAward,
   FiCalendar,
+  FiClock,
+  FiCheck,
+  FiInbox,
+  FiUsers,
 } from "react-icons/fi";
 
 const KEYBOARD_ROWS = [
@@ -31,13 +35,18 @@ const STAT_RANGES = [
 
 export default function Friends() {
   const navigate = useNavigate();
-  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } =
-    useTheme();
+  const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
+
+  const [activeTab, setActiveTab] = useState("friends"); // "friends" | "requests"
   const [friends, setFriends] = useState([]);
+  const [requests, setRequests] = useState({ received: [], sent: [] });
   const [loading, setLoading] = useState(true);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+
   const [actionLoading, setActionLoading] = useState({});
   const [selectedUserStats, setSelectedUserStats] = useState(null);
   const [selectedStatsRange, setSelectedStatsRange] = useState("allTime");
@@ -53,9 +62,26 @@ export default function Friends() {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    fetchFriends();
+
+  const fetchRequests = async () => {
+    try {
+      setRequestsLoading(true);
+      const res = await api.get("/GrowTyping/v1/users/friend-requests");
+      setRequests(res.data?.data || { received: [], sent: [] });
+    } catch (err) {
+      console.error("Error fetching friend requests:", err);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchFriends(), fetchRequests()]);
   }, []);
+
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
 
   const handleSearch = async (event) => {
     const query = event.target.value;
@@ -64,7 +90,7 @@ export default function Friends() {
     try {
       setSearchLoading(true);
       const res = await api.get(
-        `/GrowTyping/v1/users/search?query=${encodeURIComponent(query.trim())}`,
+        `/GrowTyping/v1/users/search?query=${encodeURIComponent(query.trim())}`
       );
       setSearchResults(res.data?.data || []);
     } catch (err) {
@@ -73,28 +99,89 @@ export default function Friends() {
       setSearchLoading(false);
     }
   };
+
   const isAlreadyFriend = (userId) =>
-    friends.some((friend) => (friend._id || friend.friend?._id) === userId);
-  const updateFriend = async (userId, endpoint, payload, action) => {
+    friends.some((f) => (f._id || f.friend?._id) === userId);
+
+  const isAlreadyRequested = (userId) =>
+    (requests.sent || []).some((r) => r._id === userId);
+
+  const hasIncomingRequest = (userId) =>
+    (requests.received || []).some((r) => r._id === userId);
+
+  const handleSendRequest = async (targetUserId) => {
     try {
-      setActionLoading((previous) => ({ ...previous, [userId]: true }));
-      await api.post(endpoint, payload);
-      await fetchFriends();
+      setActionLoading((prev) => ({ ...prev, [targetUserId]: true }));
+      await api.post("/GrowTyping/v1/users/send-friend-request", { targetUserId });
+      await refreshAll();
+      if (searchQuery.trim()) {
+        const res = await api.get(`/GrowTyping/v1/users/search?query=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchResults(res.data?.data || []);
+      }
     } catch (err) {
-      console.error(`Error ${action} friend:`, err);
-      alert(err.response?.data?.message || `Failed to ${action} friend.`);
+      console.error("Error sending friend request:", err);
+      alert(err.response?.data?.message || "Failed to send friend request.");
     } finally {
-      setActionLoading((previous) => ({ ...previous, [userId]: false }));
+      setActionLoading((prev) => ({ ...prev, [targetUserId]: false }));
     }
   };
-  const handleRemoveFriend = (userId) => {
-    if (window.confirm("Are you sure you want to remove this friend?"))
-      updateFriend(
-        userId,
-        "/GrowTyping/v1/users/unfollow",
-        { userIdToUnfollow: userId },
-        "remove",
-      );
+
+  const handleAcceptRequest = async (senderId) => {
+    try {
+      setActionLoading((prev) => ({ ...prev, [senderId]: true }));
+      await api.post("/GrowTyping/v1/users/accept-friend-request", { senderId });
+      await refreshAll();
+      if (searchQuery.trim()) {
+        const res = await api.get(`/GrowTyping/v1/users/search?query=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchResults(res.data?.data || []);
+      }
+    } catch (err) {
+      console.error("Error accepting friend request:", err);
+      alert(err.response?.data?.message || "Failed to accept friend request.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [senderId]: false }));
+    }
+  };
+
+  const handleRejectRequest = async (senderId) => {
+    try {
+      setActionLoading((prev) => ({ ...prev, [senderId]: true }));
+      await api.post("/GrowTyping/v1/users/reject-friend-request", { senderId });
+      await refreshAll();
+    } catch (err) {
+      console.error("Error rejecting friend request:", err);
+      alert(err.response?.data?.message || "Failed to reject friend request.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [senderId]: false }));
+    }
+  };
+
+  const handleCancelRequest = async (targetUserId) => {
+    try {
+      setActionLoading((prev) => ({ ...prev, [targetUserId]: true }));
+      await api.post("/GrowTyping/v1/users/cancel-friend-request", { targetUserId });
+      await refreshAll();
+    } catch (err) {
+      console.error("Error canceling friend request:", err);
+      alert(err.response?.data?.message || "Failed to cancel friend request.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [targetUserId]: false }));
+    }
+  };
+
+  const handleRemoveFriend = async (userId) => {
+    if (window.confirm("Are you sure you want to remove this friend?")) {
+      try {
+        setActionLoading((prev) => ({ ...prev, [userId]: true }));
+        await api.post("/GrowTyping/v1/users/unfollow", { userIdToUnfollow: userId, friendId: userId });
+        await refreshAll();
+      } catch (err) {
+        console.error("Error removing friend:", err);
+        alert(err.response?.data?.message || "Failed to remove friend.");
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [userId]: false }));
+      }
+    }
   };
 
   const fetchFriendTelemetry = async (userId, username, range) => {
@@ -106,7 +193,7 @@ export default function Friends() {
     }));
     try {
       const res = await api.get(
-        `/GrowTyping/v1/stats/public-telemetry/${userId}?range=${range}`,
+        `/GrowTyping/v1/stats/public-telemetry/${userId}?range=${range}`
       );
       setSelectedUserStats({
         username,
@@ -119,25 +206,30 @@ export default function Friends() {
       setSelectedUserStats({ username, userId, stats: null, loading: false });
     }
   };
+
   const handleViewStats = (userId, username) => {
     setSelectedStatsRange("allTime");
     fetchFriendTelemetry(userId, username, "allTime");
   };
+
   const handleStatsRangeChange = (range) => {
     if (!selectedUserStats || range === selectedStatsRange) return;
     setSelectedStatsRange(range);
     fetchFriendTelemetry(
       selectedUserStats.userId,
       selectedUserStats.username,
-      range,
+      range
     );
   };
+
+  const pendingRequestsCount = requests.received ? requests.received.length : 0;
 
   return (
     <div
       className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} p-4 sm:p-8 transition-colors duration-300`}
     >
       <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header Bar */}
         <header
           className={`flex items-center justify-between p-4 ${themeConfig.card} border ${themeConfig.border} flex-wrap gap-3`}
         >
@@ -175,6 +267,7 @@ export default function Friends() {
           </div>
         </header>
 
+        {/* Search & Add Typists */}
         <section
           className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-4`}
         >
@@ -203,7 +296,10 @@ export default function Friends() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {searchResults.map((user) => {
-                    const isFriend = isAlreadyFriend(user._id);
+                    const friend = isAlreadyFriend(user._id) || user.isFriend;
+                    const requested = isAlreadyRequested(user._id) || user.isRequested;
+                    const incoming = hasIncomingRequest(user._id) || user.hasIncomingRequest;
+
                     return (
                       <div
                         key={user._id}
@@ -215,31 +311,38 @@ export default function Friends() {
                             {user.fullname || "Typist"}
                           </p>
                         </div>
-                        {isFriend ? (
-                          <span
-                            className={`px-3 py-1.5 ${themeConfig.buttonSecondary} text-[11px] font-bold flex items-center gap-1`}
-                          >
-                            <FiUserCheck /> Friend
-                          </span>
-                        ) : (
-                          <button
-                            disabled={actionLoading[user._id]}
-                            onClick={() =>
-                              updateFriend(
-                                user._id,
-                                "/GrowTyping/v1/users/follow",
-                                { userIdToFollow: user._id },
-                                "add",
-                              )
-                            }
-                            className={`px-3 py-1.5 ${themeConfig.buttonPrimary} text-[11px] font-bold flex items-center gap-1`}
-                          >
-                            <FiUserPlus />{" "}
-                            {actionLoading[user._id]
-                              ? "Adding..."
-                              : "Add Friend"}
-                          </button>
-                        )}
+                        <div>
+                          {friend ? (
+                            <span
+                              className={`px-3 py-1.5 ${themeConfig.buttonSecondary} text-[11px] font-bold flex items-center gap-1 opacity-80`}
+                            >
+                              <FiUserCheck className="text-emerald-400" /> Friend
+                            </span>
+                          ) : requested ? (
+                            <span
+                              className={`px-3 py-1.5 ${themeConfig.card} text-amber-400 text-[11px] font-bold flex items-center gap-1 border ${themeConfig.border}`}
+                            >
+                              <FiClock /> Requested
+                            </span>
+                          ) : incoming ? (
+                            <button
+                              disabled={actionLoading[user._id]}
+                              onClick={() => handleAcceptRequest(user._id)}
+                              className={`px-3 py-1.5 ${themeConfig.buttonPrimary} text-[11px] font-bold flex items-center gap-1`}
+                            >
+                              <FiCheck /> Accept Request
+                            </button>
+                          ) : (
+                            <button
+                              disabled={actionLoading[user._id]}
+                              onClick={() => handleSendRequest(user._id)}
+                              className={`px-3 py-1.5 ${themeConfig.buttonPrimary} text-[11px] font-bold flex items-center gap-1`}
+                            >
+                              <FiUserPlus />{" "}
+                              {actionLoading[user._id] ? "Sending..." : "Add Friend"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -249,66 +352,211 @@ export default function Friends() {
           )}
         </section>
 
+        {/* Tab Toggle Header & Main Content Section */}
         <section
-          className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-4`}
+          className={`p-6 ${themeConfig.card} border ${themeConfig.border} space-y-6`}
         >
-          <div className="flex justify-between">
-            <h2 className="text-lg font-extrabold">Your Friends List</h2>
+          {/* Toggle Options: Friends vs Requests */}
+          <div className="flex items-center justify-between border-b pb-4 gap-4 flex-wrap border-slate-700/30">
+            <div className={`flex gap-2 ${themeConfig.cardInset} p-1.5 rounded-xl border ${themeConfig.border}`}>
+              <button
+                onClick={() => setActiveTab("friends")}
+                className={`px-5 py-2.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 ${
+                  activeTab === "friends"
+                    ? themeConfig.buttonPrimary
+                    : `${themeConfig.mutedText} hover:${themeConfig.bodyText}`
+                }`}
+              >
+                <FiUsers className="text-sm" />
+                <span>Friends</span>
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/20 font-mono">
+                  {friends.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("requests")}
+                className={`px-5 py-2.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 relative ${
+                  activeTab === "requests"
+                    ? themeConfig.buttonPrimary
+                    : `${themeConfig.mutedText} hover:${themeConfig.bodyText}`
+                }`}
+              >
+                <FiInbox className="text-sm" />
+                <span>Requests</span>
+                {pendingRequestsCount > 0 ? (
+                  <span className="px-2 py-0.5 text-[10px] rounded-full bg-rose-500 text-white font-bold animate-pulse">
+                    {pendingRequestsCount}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/20 font-mono">
+                    0
+                  </span>
+                )}
+              </button>
+            </div>
+
             <span className={`text-xs ${themeConfig.mutedText}`}>
-              {friends.length} Friends
+              {activeTab === "friends"
+                ? `${friends.length} connected friends`
+                : `${pendingRequestsCount} pending incoming request${pendingRequestsCount === 1 ? "" : "s"}`}
             </span>
           </div>
-          {loading ? (
-            <p className={`text-xs ${themeConfig.mutedText} text-center p-8`}>
-              Loading friends network...
-            </p>
-          ) : friends.length === 0 ? (
-            <p className={`p-8 text-center text-sm ${themeConfig.mutedText}`}>
-              You haven't added any friends yet. Use the search box above to
-              find typists.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {friends.map((item) => {
-                const friend = item.friend || item,
-                  id = friend._id || item._id;
-                return (
-                  <div
-                    key={id}
-                    className={`p-5 ${themeConfig.cardInset} border ${themeConfig.border} rounded-2xl space-y-4`}
-                  >
-                    <div>
-                      <p className="text-sm font-extrabold">
-                        {friend.username}
-                      </p>
-                      <p className={`text-[10px] ${themeConfig.mutedText}`}>
-                        {friend.fullname || "GrowTyping Member"}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleViewStats(id, friend.username)}
-                        className={`flex-1 py-2 ${themeConfig.buttonSecondary} text-xs font-bold flex justify-center items-center gap-1`}
+
+          {/* Tab 1: Friends List */}
+          {activeTab === "friends" && (
+            <div>
+              {loading ? (
+                <p className={`text-xs ${themeConfig.mutedText} text-center p-8`}>
+                  Loading friends network...
+                </p>
+              ) : friends.length === 0 ? (
+                <div className="p-8 text-center space-y-2">
+                  <FiUsers className={`mx-auto text-3xl ${themeConfig.mutedText}`} />
+                  <p className={`text-sm ${themeConfig.mutedText}`}>
+                    You haven't added any friends yet. Use the search box above to find typists and send requests!
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {friends.map((item) => {
+                    const friend = item.friend || item;
+                    const id = friend._id || item._id;
+                    return (
+                      <div
+                        key={id}
+                        className={`p-5 ${themeConfig.cardInset} border ${themeConfig.border} rounded-2xl space-y-4 shadow-sm`}
                       >
-                        <FiBarChart2 /> View Stats
-                      </button>
-                      <button
-                        disabled={actionLoading[id]}
-                        onClick={() => handleRemoveFriend(id)}
-                        title="Remove Friend"
-                        className="p-2 bg-red-500/10 text-red-400 rounded-xl"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
+                        <div>
+                          <p className="text-sm font-extrabold">
+                            {friend.username}
+                          </p>
+                          <p className={`text-[10px] ${themeConfig.mutedText}`}>
+                            {friend.fullname || "GrowTyping Member"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleViewStats(id, friend.username)}
+                            className={`flex-1 py-2 ${themeConfig.buttonSecondary} text-xs font-bold flex justify-center items-center gap-1`}
+                          >
+                            <FiBarChart2 /> View Stats
+                          </button>
+                          <button
+                            disabled={actionLoading[id]}
+                            onClick={() => handleRemoveFriend(id)}
+                            title="Remove Friend"
+                            className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition-colors"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 2: Requests Section */}
+          {activeTab === "requests" && (
+            <div className="space-y-8">
+              {/* Incoming Requests */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-extrabold uppercase tracking-wider flex items-center gap-2">
+                  <FiInbox className={themeConfig.accent} /> Incoming Friend Requests ({requests.received?.length || 0})
+                </h3>
+
+                {requestsLoading ? (
+                  <p className={`text-xs ${themeConfig.mutedText} p-4`}>Loading requests...</p>
+                ) : !requests.received || requests.received.length === 0 ? (
+                  <div className={`p-6 text-center ${themeConfig.cardInset} border ${themeConfig.border} rounded-xl`}>
+                    <p className={`text-xs ${themeConfig.mutedText}`}>No pending incoming friend requests.</p>
                   </div>
-                );
-              })}
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {requests.received.map((reqUser) => (
+                      <div
+                        key={reqUser._id}
+                        className={`p-4 ${themeConfig.cardInset} border ${themeConfig.border} rounded-xl flex items-center justify-between gap-3`}
+                      >
+                        <div>
+                          <p className="text-xs font-bold">{reqUser.username}</p>
+                          <p className={`text-[10px] ${themeConfig.mutedText}`}>
+                            {reqUser.fullname || "Typist"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            disabled={actionLoading[reqUser._id]}
+                            onClick={() => handleAcceptRequest(reqUser._id)}
+                            className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-emerald-600 transition-colors"
+                          >
+                            <FiCheck /> Accept
+                          </button>
+                          <button
+                            disabled={actionLoading[reqUser._id]}
+                            onClick={() => handleRejectRequest(reqUser._id)}
+                            className="px-3 py-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                          >
+                            <FiX /> Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sent Requests */}
+              <div className="space-y-4 pt-4 border-t border-slate-700/30">
+                <h3 className="text-sm font-extrabold uppercase tracking-wider flex items-center gap-2">
+                  <FiClock className={themeConfig.accent} /> Sent Friend Requests ({requests.sent?.length || 0})
+                </h3>
+
+                {requestsLoading ? (
+                  <p className={`text-xs ${themeConfig.mutedText} p-4`}>Loading sent requests...</p>
+                ) : !requests.sent || requests.sent.length === 0 ? (
+                  <div className={`p-6 text-center ${themeConfig.cardInset} border ${themeConfig.border} rounded-xl`}>
+                    <p className={`text-xs ${themeConfig.mutedText}`}>No pending sent requests.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {requests.sent.map((reqUser) => (
+                      <div
+                        key={reqUser._id}
+                        className={`p-4 ${themeConfig.cardInset} border ${themeConfig.border} rounded-xl flex items-center justify-between gap-3`}
+                      >
+                        <div>
+                          <p className="text-xs font-bold">{reqUser.username}</p>
+                          <p className={`text-[10px] ${themeConfig.mutedText}`}>
+                            {reqUser.fullname || "Typist"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold ${themeConfig.mutedText} flex items-center gap-1 mr-1`}>
+                            <FiClock /> Pending
+                          </span>
+                          <button
+                            disabled={actionLoading[reqUser._id]}
+                            onClick={() => handleCancelRequest(reqUser._id)}
+                            className="px-3 py-1.5 bg-slate-700/40 text-slate-300 hover:bg-slate-700 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </section>
       </div>
 
+      {/* Telemetry Stats Modal */}
       {selectedUserStats && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div
@@ -379,7 +627,7 @@ function FriendTelemetry({ stats, range, themeConfig, refreshing }) {
   const allTimeRecords = Object.entries(stats.allTimeBestRecords || {});
   const rangeRecords = Object.entries(stats.rangeBestRecords || {});
   const keyStats = Object.fromEntries(
-    (stats.heatmap || []).map((item) => [item.key, item]),
+    (stats.heatmap || []).map((item) => [item.key, item])
   );
   const weakKeys = Object.values(keyStats)
     .filter((item) => item.mistakes > 0)

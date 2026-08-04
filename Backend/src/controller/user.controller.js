@@ -363,189 +363,345 @@ const updateTheme=asyncHandler(async(req,res)=>{
         );
 });
 
-const followUser=asyncHandler(async(req,res)=>{
-    const {userIdToFollow}=req.body;
-    if(!userIdToFollow){
-        throw new ApiError(400,"User ID is required");
-   }
-    
-    if(userIdToFollow === req.user?._id.toString()){
-        throw new ApiError(400,"You cannot add yourself as a friend");
-   }
+const sendFriendRequest = asyncHandler(async (req, res) => {
+    const { targetUserId } = req.body;
+    const currentUserId = req.user?._id;
 
-    const userToFollow=await User.findById(userIdToFollow);
-    if(!userToFollow){
-        throw new ApiError(404,"User not found");
-   }
+    if (!targetUserId) {
+        throw new ApiError(400, "Target user ID is required");
+    }
+    if (targetUserId === currentUserId.toString()) {
+        throw new ApiError(400, "You cannot send a friend request to yourself");
+    }
 
-    const currentUser=await User.findById(req.user?._id);
-    if(!currentUser.following.includes(userIdToFollow)){
-        currentUser.following.push(userIdToFollow);
-   }
-    if(!currentUser.followers.includes(userIdToFollow)){
-        currentUser.followers.push(userIdToFollow);
-   }
-    await currentUser.save();
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+        throw new ApiError(404, "User not found");
+    }
 
-    if(!userToFollow.following.includes(req.user?._id)){
-        userToFollow.following.push(req.user?._id);
-   }
-    if(!userToFollow.followers.includes(req.user?._id)){
-        userToFollow.followers.push(req.user?._id);
-   }
-    await userToFollow.save();
+    const currentUser = await User.findById(currentUserId);
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200,{},"Friend added successfully")
+    if (currentUser.friends?.includes(targetUserId)) {
+        throw new ApiError(400, "You are already friends with this user");
+    }
+
+    if (currentUser.friendRequestsSent?.includes(targetUserId)) {
+        throw new ApiError(400, "Friend request already sent");
+    }
+
+    if (currentUser.friendRequestsReceived?.includes(targetUserId)) {
+        currentUser.friendRequestsReceived = currentUser.friendRequestsReceived.filter(
+            (id) => id.toString() !== targetUserId
         );
+        targetUser.friendRequestsSent = targetUser.friendRequestsSent.filter(
+            (id) => id.toString() !== currentUserId.toString()
+        );
+
+        if (!currentUser.friends.includes(targetUserId)) currentUser.friends.push(targetUserId);
+        if (!targetUser.friends.includes(currentUserId)) targetUser.friends.push(currentUserId);
+
+        await currentUser.save();
+        await targetUser.save();
+
+        return res.status(200).json(new ApiResponse(200, {}, "Friend request accepted!"));
+    }
+
+    if (!currentUser.friendRequestsSent.includes(targetUserId)) {
+        currentUser.friendRequestsSent.push(targetUserId);
+    }
+    if (!targetUser.friendRequestsReceived.includes(currentUserId)) {
+        targetUser.friendRequestsReceived.push(currentUserId);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    return res.status(200).json(new ApiResponse(200, {}, "Friend request sent successfully"));
 });
 
-const unfollowUser=asyncHandler(async(req,res)=>{
-    const {userIdToUnfollow}=req.body;
-    if(!userIdToUnfollow){
-        throw new ApiError(400,"User ID is required");
-   }
+const acceptFriendRequest = asyncHandler(async (req, res) => {
+    const { senderId } = req.body;
+    const currentUserId = req.user?._id;
 
-    const userToUnfollow=await User.findById(userIdToUnfollow);
-    if(!userToUnfollow){
-        throw new ApiError(404,"User not found");
-   }
+    if (!senderId) {
+        throw new ApiError(400, "Sender user ID is required");
+    }
 
-    const currentUser=await User.findById(req.user?._id);
-    currentUser.following=currentUser.following.filter(id => id.toString() !== userIdToUnfollow);
-    currentUser.followers=currentUser.followers.filter(id => id.toString() !== userIdToUnfollow);
+    const senderUser = await User.findById(senderId);
+    if (!senderUser) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const currentUser = await User.findById(currentUserId);
+
+    currentUser.friendRequestsReceived = (currentUser.friendRequestsReceived || []).filter(
+        (id) => id.toString() !== senderId
+    );
+    senderUser.friendRequestsSent = (senderUser.friendRequestsSent || []).filter(
+        (id) => id.toString() !== currentUserId.toString()
+    );
+
+    if (!currentUser.friends) currentUser.friends = [];
+    if (!senderUser.friends) senderUser.friends = [];
+
+    if (!currentUser.friends.some((id) => id.toString() === senderId)) {
+        currentUser.friends.push(senderId);
+    }
+    if (!senderUser.friends.some((id) => id.toString() === currentUserId.toString())) {
+        senderUser.friends.push(currentUserId);
+    }
+
     await currentUser.save();
+    await senderUser.save();
 
-    userToUnfollow.following=userToUnfollow.following.filter(id => id.toString() !== req.user?._id.toString());
-    userToUnfollow.followers=userToUnfollow.followers.filter(id => id.toString() !== req.user?._id.toString());
-    await userToUnfollow.save();
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200,{},"Friend removed successfully")
-        );
+    return res.status(200).json(new ApiResponse(200, {}, "Friend request accepted"));
 });
 
-const getFriends=asyncHandler(async(req,res)=>{
-    const user=await User.findById(req.user?._id)
+const rejectFriendRequest = asyncHandler(async (req, res) => {
+    const { senderId } = req.body;
+    const currentUserId = req.user?._id;
+
+    if (!senderId) {
+        throw new ApiError(400, "Sender user ID is required");
+    }
+
+    const currentUser = await User.findById(currentUserId);
+    const senderUser = await User.findById(senderId);
+
+    currentUser.friendRequestsReceived = (currentUser.friendRequestsReceived || []).filter(
+        (id) => id.toString() !== senderId
+    );
+    if (senderUser) {
+        senderUser.friendRequestsSent = (senderUser.friendRequestsSent || []).filter(
+            (id) => id.toString() !== currentUserId.toString()
+        );
+        await senderUser.save();
+    }
+    await currentUser.save();
+
+    return res.status(200).json(new ApiResponse(200, {}, "Friend request rejected"));
+});
+
+const cancelFriendRequest = asyncHandler(async (req, res) => {
+    const { targetUserId } = req.body;
+    const currentUserId = req.user?._id;
+
+    if (!targetUserId) {
+        throw new ApiError(400, "Target user ID is required");
+    }
+
+    const currentUser = await User.findById(currentUserId);
+    const targetUser = await User.findById(targetUserId);
+
+    currentUser.friendRequestsSent = (currentUser.friendRequestsSent || []).filter(
+        (id) => id.toString() !== targetUserId
+    );
+    if (targetUser) {
+        targetUser.friendRequestsReceived = (targetUser.friendRequestsReceived || []).filter(
+            (id) => id.toString() !== currentUserId.toString()
+        );
+        await targetUser.save();
+    }
+    await currentUser.save();
+
+    return res.status(200).json(new ApiResponse(200, {}, "Friend request canceled"));
+});
+
+const getFriendRequests = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id)
+        .populate('friendRequestsReceived', 'username fullname')
+        .populate('friendRequestsSent', 'username fullname');
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                received: user.friendRequestsReceived || [],
+                sent: user.friendRequestsSent || [],
+            },
+            "Friend requests fetched successfully"
+        )
+    );
+});
+
+const followUser = sendFriendRequest;
+
+const unfollowUser = asyncHandler(async (req, res) => {
+    const { userIdToUnfollow, friendId } = req.body;
+    const targetId = userIdToUnfollow || friendId;
+    if (!targetId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const userToUnfollow = await User.findById(targetId);
+    const currentUser = await User.findById(req.user?._id);
+
+    if (currentUser) {
+        currentUser.friends = (currentUser.friends || []).filter(id => id.toString() !== targetId);
+        currentUser.following = (currentUser.following || []).filter(id => id.toString() !== targetId);
+        currentUser.followers = (currentUser.followers || []).filter(id => id.toString() !== targetId);
+        await currentUser.save();
+    }
+
+    if (userToUnfollow) {
+        userToUnfollow.friends = (userToUnfollow.friends || []).filter(id => id.toString() !== req.user?._id.toString());
+        userToUnfollow.following = (userToUnfollow.following || []).filter(id => id.toString() !== req.user?._id.toString());
+        userToUnfollow.followers = (userToUnfollow.followers || []).filter(id => id.toString() !== req.user?._id.toString());
+        await userToUnfollow.save();
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Friend removed successfully")
+    );
+});
+
+const getFriends = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id)
+        .populate('friends', 'username fullname')
         .populate('following', 'username fullname')
         .populate('followers', 'username fullname');
-    if(!user){
-        throw new ApiError(404,"User not found");
-   }
-    const friendMap=new Map();
-    [...(user.following || []), ...(user.followers || [])].forEach(f => {
-        if(f && f._id && f._id.toString() !== user._id.toString()){
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    const friendMap = new Map();
+    [...(user.friends || []), ...(user.following || []), ...(user.followers || [])].forEach(f => {
+        if (f && f._id && f._id.toString() !== user._id.toString()) {
             friendMap.set(f._id.toString(), f);
         }
     });
-    const friends=Array.from(friendMap.values());
+    const friends = Array.from(friendMap.values());
     return res
         .status(200)
         .json(
-            new ApiResponse(200,friends,"Friends fetched successfully")
+            new ApiResponse(200, friends, "Friends fetched successfully")
         );
 });
 
-const getFollowers=asyncHandler(async(req,res)=>{
-    const user=await User.findById(req.user?._id).populate('followers', 'username fullname').select('followers');
-    if(!user){
-        throw new ApiError(404,"User not found");
-   }
+const getFollowers = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id).populate('followers', 'username fullname').select('followers');
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
     return res
         .status(200)
         .json(
-            new ApiResponse(200,user.followers,"Followers fetched successfully")
+            new ApiResponse(200, user.followers, "Followers fetched successfully")
         );
 });
 
-const getFollowing=asyncHandler(async(req,res)=>{
-    const user=await User.findById(req.user?._id).populate('following', 'username fullname').select('following');
-    if(!user){
-        throw new ApiError(404,"User not found");
-   }
+const getFollowing = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id).populate('following', 'username fullname').select('following');
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
     return res
         .status(200)
         .json(
-            new ApiResponse(200,user.following,"Following fetched successfully")
+            new ApiResponse(200, user.following, "Following fetched successfully")
         );
 });
 
-const getUserPublicProfile=asyncHandler(async(req,res)=>{
-    const {username}=req.params;
-    if(!username || !username.trim()){
-        throw new ApiError(400,"Username is required");
-   }
+const getUserPublicProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params;
+    if (!username || !username.trim()) {
+        throw new ApiError(400, "Username is required");
+    }
 
-    const user=await User.findOne({username: username.toLowerCase().trim()})
+    const user = await User.findOne({ username: username.toLowerCase().trim() })
         .select("-password -refreshToken -emailVerificationToken -emailVerificationTokenExpiry")
         .populate('followers', 'username fullname')
-        .populate('following', 'username fullname');
-        
-    if(!user){
-        throw new ApiError(404,"User not found");
-   }
+        .populate('following', 'username fullname')
+        .populate('friends', 'username fullname');
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200,user,"User profile fetched successfully")
+            new ApiResponse(200, user, "User profile fetched successfully")
         );
 });
 
-
-const searchUsers=asyncHandler(async(req,res)=>{
-    const {query}=req.query;
-    if(!query || !query.trim()){
-        throw new ApiError(400,"Search query is required");
-   }
+const searchUsers = asyncHandler(async (req, res) => {
+    const { query } = req.query;
+    if (!query || !query.trim()) {
+        throw new ApiError(400, "Search query is required");
+    }
 
     const searchQuery = query.trim();
-    const users=await User.find({
-        $or: [
-            {username: {$regex: searchQuery, $options: 'i'}},
-            {_id: searchQuery}
-        ]
-   })
+    const isIdQuery = /^[0-9a-fA-F]{24}$/.test(searchQuery);
+    const searchConditions = [{ username: { $regex: searchQuery, $options: 'i' } }];
+    if (isIdQuery) {
+        searchConditions.push({ _id: searchQuery });
+    }
+
+    const rawUsers = await User.find({ $or: searchConditions })
         .select('_id username fullname')
-        .limit(5);
+        .limit(10);
+
+    let resultUsers = rawUsers.map(u => u.toObject());
+
+    if (req.user?._id) {
+        const currentUser = await User.findById(req.user._id);
+        if (currentUser) {
+            const friendSet = new Set([
+                ...(currentUser.friends || []).map(id => id.toString()),
+                ...(currentUser.following || []).map(id => id.toString())
+            ]);
+            const sentSet = new Set((currentUser.friendRequestsSent || []).map(id => id.toString()));
+            const receivedSet = new Set((currentUser.friendRequestsReceived || []).map(id => id.toString()));
+
+            resultUsers = resultUsers.map(u => {
+                const uid = u._id.toString();
+                return {
+                    ...u,
+                    isFriend: friendSet.has(uid),
+                    isRequested: sentSet.has(uid),
+                    hasIncomingRequest: receivedSet.has(uid)
+                };
+            });
+        }
+    }
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200,users,"Users found successfully")
+            new ApiResponse(200, resultUsers, "Users found successfully")
         );
 });
 
-const removeFollower=asyncHandler(async(req,res)=>{
-    const {userIdToRemove}=req.body;
-    if(!userIdToRemove){
-        throw new ApiError(400,"User ID is required");
-   }
+const removeFollower = asyncHandler(async (req, res) => {
+    const { userIdToRemove } = req.body;
+    if (!userIdToRemove) {
+        throw new ApiError(400, "User ID is required");
+    }
 
-    const followerToRemove=await User.findById(userIdToRemove);
-    if(!followerToRemove){
-        throw new ApiError(404,"User not found");
-   }
+    const followerToRemove = await User.findById(userIdToRemove);
+    if (!followerToRemove) {
+        throw new ApiError(404, "User not found");
+    }
 
-    const currentUser=await User.findById(req.user?._id);
-    currentUser.followers=currentUser.followers.filter(id => id.toString() !== userIdToRemove);
+    const currentUser = await User.findById(req.user?._id);
+    currentUser.followers = currentUser.followers.filter(id => id.toString() !== userIdToRemove);
     await currentUser.save();
 
-    followerToRemove.following=followerToRemove.following.filter(id => id.toString() !== req.user?._id.toString());
+    followerToRemove.following = followerToRemove.following.filter(id => id.toString() !== req.user?._id.toString());
     await followerToRemove.save();
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200,{},"Follower removed successfully")
+            new ApiResponse(200, {}, "Follower removed successfully")
         );
 });
 
-const forgotPassword = asyncHandler(async(req, res) => {
+const forgotPassword = asyncHandler(async (req, res) => {
     const { email, username } = req.body;
 
     if (!email && !username) {
@@ -564,7 +720,7 @@ const forgotPassword = asyncHandler(async(req, res) => {
     await user.save({ validateBeforeSave: false });
     let mailSent = false;
     let mailError = null;
-    
+
     try {
         await sendPasswordResetMail({
             to: user.email,
@@ -598,8 +754,10 @@ const forgotPassword = asyncHandler(async(req, res) => {
     );
 });
 
-export {registeruser, refreshAccessToken,
-     loginuser, logoutuser, changeCurrentPassword, 
-    deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme, 
-    followUser, unfollowUser, getFollowers, getFollowing, getFriends, getUserPublicProfile, searchUsers, removeFollower, forgotPassword
-    };
+export {
+    registeruser, refreshAccessToken,
+    loginuser, logoutuser, changeCurrentPassword,
+    deleteUser, getUsername, updateDetails, getUserProfile, verifyEmail, updateTheme,
+    followUser, unfollowUser, getFollowers, getFollowing, getFriends, getUserPublicProfile, searchUsers, removeFollower, forgotPassword,
+    sendFriendRequest, acceptFriendRequest, rejectFriendRequest, cancelFriendRequest, getFriendRequests
+};

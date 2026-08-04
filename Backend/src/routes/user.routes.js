@@ -21,6 +21,11 @@ import {
   searchUsers,
   removeFollower,
   forgotPassword,
+  sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  cancelFriendRequest,
+  getFriendRequests,
 } from "../controller/user.controller.js";
 import {
   completeGoogleAuth,
@@ -46,11 +51,16 @@ router.route('/getuserprofile').get(verifyJWT, getUserProfile);
 router.route('/updatetheme').post(verifyJWT, updateTheme);
 router.route('/follow').post(verifyJWT, followUser);
 router.route('/unfollow').post(verifyJWT, unfollowUser);
+router.route('/send-friend-request').post(verifyJWT, sendFriendRequest);
+router.route('/accept-friend-request').post(verifyJWT, acceptFriendRequest);
+router.route('/reject-friend-request').post(verifyJWT, rejectFriendRequest);
+router.route('/cancel-friend-request').post(verifyJWT, cancelFriendRequest);
+router.route('/friend-requests').get(verifyJWT, getFriendRequests);
 router.route('/remove-follower').post(verifyJWT, removeFollower);
 router.route('/followers').get(verifyJWT, getFollowers);
 router.route('/following').get(verifyJWT, getFollowing);
 router.route('/friends').get(verifyJWT, getFriends);
-router.route('/search').get(searchUsers);
+router.route('/search').get(optionalVerifyJWT, searchUsers);
 router.route('/public-profile/:username').get(getUserPublicProfile);
 router.get("/me", optionalVerifyJWT, (req, res) => {
   if (!req.user) {

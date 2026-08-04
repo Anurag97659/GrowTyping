@@ -75,6 +75,18 @@ const userSchema=new Schema({
     following: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    }],
+    friends: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    friendRequestsSent: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    friendRequestsReceived: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }]
 },{timestamps:true});
 

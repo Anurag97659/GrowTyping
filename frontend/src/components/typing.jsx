@@ -276,11 +276,28 @@ export default function TypingPage() {
     }
   };
 
+  const tabPressedRef = useRef(false);
+
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
       resetTest();
       return;
     }
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      tabPressedRef.current = true;
+      return;
+    }
+
+    if (e.key === "Enter" && tabPressedRef.current) {
+      e.preventDefault();
+      tabPressedRef.current = false;
+      resetTest();
+      return;
+    }
+
+    tabPressedRef.current = false;
 
     if (finishedRef.current) return;
     if (e.key === "Backspace") {
@@ -566,7 +583,7 @@ export default function TypingPage() {
       {/* Footer Section */}
       <div className="flex flex-col items-center pt-4">
         <p className={`text-xs ${themeConfig.mutedText} mb-2 tracking-wider text-center`}>
-          Start typing to begin • Press Escape to reset
+          Start typing to begin • Press Esc or Tab + Enter to reset
         </p>
 
         {/* GitHub Repository Footer Link */}
