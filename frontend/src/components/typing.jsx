@@ -151,10 +151,15 @@ export default function TypingPage() {
   const navigate = useNavigate();
   const { themeId, mode, themeConfig, THEMES, setThemeId, toggleMode, setMode } = useTheme();
 
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    containerRef.current?.focus();
+  }, []);
+
   const [username, setUsername] = useState("Guest");
   const [loggedIn, setLoggedIn] = useState(false);
 
-  // Synchronously capture queued replay test from sessionStorage before initial state creation
   const queuedReplayRef = useRef(null);
   const replayCheckedRef = useRef(false);
   if (!replayCheckedRef.current) {
@@ -264,6 +269,7 @@ export default function TypingPage() {
       finalStatsRef.current = { wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0, incorrectChars: 0, totalTyped: 0 };
       weakKeysRef.current = {};
       keyStatsRef.current = {};
+      setTimeout(() => containerRef.current?.focus(), 0);
     },
     [testType, textMode, durationMap]
   );
@@ -424,19 +430,62 @@ export default function TypingPage() {
     }
   };
 
+  const allLines = useMemo(() => {
+    if (!text) return [];
+    const targetLineLength = 65;
+    const lines = [];
+    let currentLineStart = 0;
+    let i = 0;
+
+    while (i < text.length) {
+      let nextSpace = text.indexOf(" ", i);
+      if (nextSpace === -1) {
+        nextSpace = text.length;
+      }
+
+      const wordEnd = nextSpace < text.length ? nextSpace + 1 : text.length;
+      const currentLineLength = wordEnd - currentLineStart;
+
+      if (currentLineLength > targetLineLength && i > currentLineStart) {
+        lines.push({
+          start: currentLineStart,
+          end: i,
+          text: text.slice(currentLineStart, i),
+        });
+        currentLineStart = i;
+      }
+
+      i = wordEnd;
+    }
+
+    if (currentLineStart < text.length) {
+      lines.push({
+        start: currentLineStart,
+        end: text.length,
+        text: text.slice(currentLineStart, text.length),
+      });
+    }
+
+    return lines;
+  }, [text]);
+
+  const currentLineIndex = useMemo(() => {
+    if (!allLines.length) return 0;
+    const idx = allLines.findIndex(
+      (line) => typedChars.length >= line.start && typedChars.length < line.end
+    );
+    return idx !== -1 ? idx : allLines.length - 1;
+  }, [allLines, typedChars.length]);
+
   const renderedLines = useMemo(() => {
-    if (!text) return null;
-    const charsPerLine = 65;
-    const totalLines = Math.ceil(text.length / charsPerLine);
-    const currentLineIndex = Math.floor(typedChars.length / charsPerLine);
+    if (!allLines.length) return null;
+    const totalLines = allLines.length;
     const startLine = Math.max(0, Math.min(currentLineIndex - 1, totalLines - 3));
     const endLine = Math.min(totalLines, startLine + 3);
 
     const lines = [];
     for (let lineIdx = startLine; lineIdx < endLine; lineIdx++) {
-      const lineStart = lineIdx * charsPerLine;
-      const lineEnd = Math.min(text.length, lineStart + charsPerLine);
-      const lineText = text.slice(lineStart, lineEnd);
+      const line = allLines[lineIdx];
       const isCurrentLine = lineIdx === currentLineIndex;
 
       lines.push(
@@ -446,8 +495,8 @@ export default function TypingPage() {
             isCurrentLine ? "opacity-100" : "opacity-40"
           }`}
         >
-          {lineText.split("").map((char, i) => {
-            const charIdx = lineStart + i;
+          {line.text.split("").map((char, i) => {
+            const charIdx = line.start + i;
 
             if (charIdx < typedChars.length) {
               return (
@@ -485,12 +534,24 @@ export default function TypingPage() {
       );
     }
     return lines;
-  }, [text, typedChars, themeConfig]);
+  }, [allLines, currentLineIndex, typedChars, themeConfig]);
 
   return (
     <div
+      ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
+      onClick={(e) => {
+        const tag = e.target.tagName;
+        if (
+          !["BUTTON", "SELECT", "INPUT", "A", "OPTION"].includes(tag) &&
+          !e.target.closest("button") &&
+          !e.target.closest("a") &&
+          !e.target.closest("select")
+        ) {
+          containerRef.current?.focus();
+        }
+      }}
       className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} font-mono flex flex-col items-center justify-between outline-none transition-colors duration-300 pb-6`}
     >
       {/* Top Header Bar */}
