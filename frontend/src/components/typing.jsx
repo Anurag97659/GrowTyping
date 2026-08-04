@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { clearAccessToken } from "../lib/api";
 import { FaGithub } from "react-icons/fa";
@@ -152,8 +152,16 @@ export default function TypingPage() {
   const { themeId, mode, themeConfig, THEMES, setThemeId, toggleMode, setMode } = useTheme();
 
   const containerRef = useRef(null);
+  const hiddenInputRef = useRef(null);
+  const typingAreaRef = useRef(null);
+  const wordsWrapperRef = useRef(null);
+  const caretRef = useRef(null);
+  const activeLetterRef = useRef(null);
+
+  const [lineOffsetY, setLineOffsetY] = useState(0);
 
   useEffect(() => {
+    hiddenInputRef.current?.focus();
     containerRef.current?.focus();
   }, []);
 
@@ -260,6 +268,7 @@ export default function TypingPage() {
       setTypedChars([]);
       typedCharsRef.current = [];
       setTimeLeft(durationMap[testType]);
+      setLineOffsetY(0);
       startedRef.current = false;
       finishedRef.current = false;
       savedRef.current = false;
@@ -269,7 +278,10 @@ export default function TypingPage() {
       finalStatsRef.current = { wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0, incorrectChars: 0, totalTyped: 0 };
       weakKeysRef.current = {};
       keyStatsRef.current = {};
-      setTimeout(() => containerRef.current?.focus(), 0);
+      setTimeout(() => {
+        hiddenInputRef.current?.focus();
+        containerRef.current?.focus();
+      }, 0);
     },
     [testType, textMode, durationMap]
   );
@@ -477,6 +489,26 @@ export default function TypingPage() {
     return idx !== -1 ? idx : allLines.length - 1;
   }, [allLines, typedChars.length]);
 
+  
+  useLayoutEffect(() => {
+    if (activeLetterRef.current && typingAreaRef.current && caretRef.current) {
+      const letterRect = activeLetterRef.current.getBoundingClientRect();
+      const containerRect = typingAreaRef.current.getBoundingClientRect();
+
+      let x = letterRect.left - containerRect.left;
+      const y = letterRect.top - containerRect.top;
+      const h = letterRect.height || 36;
+
+      const currentLine = allLines[currentLineIndex];
+      if (currentLine && typedChars.length >= currentLine.end) {
+        x += letterRect.width;
+      }
+
+      caretRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      caretRef.current.style.height = `${h}px`;
+    }
+  }, [typedChars.length, text, currentLineIndex, allLines]);
+
   const renderedLines = useMemo(() => {
     if (!allLines.length) return null;
     const totalLines = allLines.length;
@@ -497,11 +529,13 @@ export default function TypingPage() {
         >
           {line.text.split("").map((char, i) => {
             const charIdx = line.start + i;
+            const isCurrentChar = charIdx === typedChars.length;
 
             if (charIdx < typedChars.length) {
               return (
                 <span
                   key={i}
+                  ref={isCurrentChar ? activeLetterRef : null}
                   className={
                     typedChars[charIdx].correct
                       ? `${themeConfig.accent} font-medium inline`
@@ -513,19 +547,12 @@ export default function TypingPage() {
               );
             }
 
-            if (charIdx === typedChars.length) {
-              return (
-                <span
-                  key={i}
-                  className="inline border-l-2 border-current animate-pulse font-medium relative -ml-[1px]"
-                >
-                  {char === " " ? "\u00A0" : char}
-                </span>
-              );
-            }
-
             return (
-              <span key={i} className="opacity-60 inline">
+              <span
+                key={i}
+                ref={isCurrentChar ? activeLetterRef : null}
+                className={isCurrentChar ? "opacity-100 inline" : "opacity-60 inline"}
+              >
                 {char === " " ? "\u00A0" : char}
               </span>
             );
@@ -549,12 +576,25 @@ export default function TypingPage() {
           !e.target.closest("a") &&
           !e.target.closest("select")
         ) {
+          hiddenInputRef.current?.focus();
           containerRef.current?.focus();
         }
       }}
       className={`min-h-screen ${themeConfig.bg} ${themeConfig.bodyText} font-mono flex flex-col items-center justify-between outline-none transition-colors duration-300 pb-6`}
     >
-      {/* Top Header Bar */}
+      
+      <input
+        ref={hiddenInputRef}
+        type="text"
+        aria-label="Typing Input Box"
+        className="opacity-0 absolute w-0 h-0 pointer-events-none"
+        autoFocus
+        onKeyDown={handleKeyDown}
+        onChange={() => {}}
+        value=""
+      />
+
+     
       <div className={` ${themeConfig.card} border-b ${themeConfig.border} mt-10 ml-4 mr-4  py-4 px-4 sm:px-8`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <div className="flex flex-col gap-0.5">
@@ -707,8 +747,19 @@ export default function TypingPage() {
           </div>
         )}
 
-        {/* Extra Wide Centered Typing Text Area (Preserving Container Size, Fitting 65 Chars per Line Perfectly) */}
-        <div className="w-full text-2xl sm:text-3xl md:text-4xl leading-relaxed cursor-text min-h-[180px] flex flex-col items-center justify-center select-none overflow-hidden py-4 px-4 sm:px-8">
+      
+        <div
+          ref={typingAreaRef}
+          onClick={() => hiddenInputRef.current?.focus()}
+          className="typing-container relative w-full text-2xl sm:text-3xl md:text-4xl leading-relaxed cursor-text min-h-[180px] flex flex-col items-center justify-center select-none overflow-hidden py-4 px-4 sm:px-8"
+        >
+         
+          <div
+            ref={caretRef}
+            className={`grow-caret grow-caret-blink ${themeConfig.accent}`}
+            style={{ backgroundColor: "currentColor" }}
+          />
+
           {renderedLines}
         </div>
 
