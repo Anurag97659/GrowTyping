@@ -745,6 +745,58 @@ const getLeaderboard = asyncHandler(async (req, res) => {
     );
 });
 
+
+const getHistoryHeatmap = asyncHandler(async (req, res) => {
+    const userId = new mongoose.Types.ObjectId(req.user?._id);
+    const yearParam = req.query.year;
+
+    let start, end;
+    if (!yearParam || yearParam === "lastYear") {
+       
+        end = new Date();
+        start = new Date();
+        start.setFullYear(start.getFullYear() - 1);
+        start.setHours(0, 0, 0, 0);
+    } else {
+        const yr = parseInt(yearParam, 10);
+        if (isNaN(yr)) {
+            return res.status(400).json({ message: "Invalid year parameter" });
+        }
+        start = new Date(yr, 0, 1, 0, 0, 0, 0);
+        end = new Date(yr, 11, 31, 23, 59, 59, 999);
+    }
+
+    const cacheKey = `stats:historyheatmap:${userId}:${yearParam || "lastYear"}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+        return res.status(200).json(new ApiResponse(200, cached, "History heatmap (cached)"));
+    }
+
+    const data = await TypingStat.aggregate([
+        { $match: { user: userId, testDate: { $gte: start, $lte: end } } },
+        {
+            $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$testDate" } },
+                count: { $sum: 1 },
+                avgWpm: { $avg: "$wpm" },
+                avgAccuracy: { $avg: "$accuracy" }
+            }
+        },
+        { $sort: { _id: 1 } }
+    ]);
+
+    const result = data.map((d) => ({
+        date: d._id,
+        count: d.count,
+        avgWpm: Math.round(d.avgWpm || 0),
+        avgAccuracy: Number((d.avgAccuracy || 0).toFixed(1))
+    }));
+
+    await setCache(cacheKey, result, 180);
+
+    return res.status(200).json(new ApiResponse(200, result, "History heatmap fetched"));
+});
+
 export {
     saveTypingStat,
     getDashboardStats,
@@ -759,5 +811,6 @@ export {
     getUserPublicTelemetry,
     getUserBestRecords,
     getUserTypingStreak,
-    getLeaderboard
+    getLeaderboard,
+    getHistoryHeatmap
 };

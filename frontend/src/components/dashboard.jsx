@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useTheme } from "../context/ThemeContext";
+import HistoryHeatmap from "./HistoryHeatmap";
 import {
   FiArrowLeft,
   FiZap,
@@ -639,6 +640,9 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* ── History Activity Heatmap ─────────────────────────────── */}
+            <HistoryHeatmap themeConfig={themeConfig} />
 
             {/* Bar Charts Row: Avg WPM by Type | Avg Accuracy by Type | Top Weak Keys */}
             {(avgWpmByType.length > 0 || topWeakKeys.length > 0) && (

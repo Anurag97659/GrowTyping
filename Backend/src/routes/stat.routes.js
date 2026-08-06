@@ -14,7 +14,8 @@ import {
     getUserPublicTelemetry,
     getUserBestRecords,
     getUserTypingStreak,
-    getLeaderboard
+    getLeaderboard,
+    getHistoryHeatmap
 } from "../controller/stats.controller.js";
 
 const router = Router();
@@ -30,6 +31,7 @@ router.route("/streak").get(verifyJWT, getTypingStreak);
 router.route("/history").get(verifyJWT, getTypingHistory);
 router.route("/average-accuracy").get(verifyJWT, getAverageAccuracyByType);
 router.route("/leaderboard").get(getLeaderboard);
+router.route("/history-heatmap").get(verifyJWT, getHistoryHeatmap);
 
 router.route("/public-telemetry/:userId").get(getUserPublicTelemetry);
 router.route("/public/:userId").get(getUserPublicStats);
