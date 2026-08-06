@@ -747,7 +747,11 @@ const getLeaderboard = asyncHandler(async (req, res) => {
 
 
 const getHistoryHeatmap = asyncHandler(async (req, res) => {
-    const userId = new mongoose.Types.ObjectId(req.user?._id);
+    const targetUserId = req.query.userId || req.params.userId || req.user?._id;
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+    }
+    const userId = new mongoose.Types.ObjectId(targetUserId);
     const yearParam = req.query.year;
 
     let start, end;

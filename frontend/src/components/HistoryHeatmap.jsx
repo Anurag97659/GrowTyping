@@ -125,14 +125,35 @@ function idealCellSize(sections, availablePx) {
 }
 
 
+
+const COLOR_LEVELS = [
+  // level 1 – 1 test
+  { bg: "rgba(22,163,74,0.22)",  sh: "none",                                                                  bd: "rgba(22,163,74,0.38)" },
+  // level 2 – 2-3 tests
+  { bg: "rgba(22,163,74,0.45)",  sh: "0 0 4px rgba(22,163,74,0.45)",                                          bd: "rgba(22,163,74,0.60)" },
+  // level 3 – 4-6 tests
+  { bg: "rgba(22,163,74,0.68)",  sh: "0 0 7px rgba(22,163,74,0.65)",                                          bd: "rgba(22,163,74,0.82)" },
+  // level 4 – 7-10 tests
+  { bg: "rgba(34,197,94,0.85)",  sh: "0 0 12px rgba(34,197,94,0.75)",                                         bd: "rgba(34,197,94,0.92)" },
+  // level 5 – 11+ tests: max glow
+  { bg: "rgba(74,222,128,1)",    sh: "0 0 16px rgba(74,222,128,1), 0 0 30px rgba(74,222,128,0.55)",           bd: "#4ade80"               },
+];
+
 function getCellColor(count, maxCount) {
   if (!count) return null;
-  const r = maxCount === 0 ? 0 : count / maxCount;
-  if (r <= 0.2) return { bg: "rgba(22,163,74,0.28)",  sh: "none",                                                             bd: "rgba(22,163,74,0.45)" };
-  if (r <= 0.4) return { bg: "rgba(22,163,74,0.50)",  sh: "0 0 5px rgba(22,163,74,0.5)",                                      bd: "rgba(22,163,74,0.65)" };
-  if (r <= 0.6) return { bg: "rgba(22,163,74,0.70)",  sh: "0 0 8px rgba(22,163,74,0.65)",                                     bd: "rgba(22,163,74,0.82)" };
-  if (r <= 0.8) return { bg: "rgba(34,197,94,0.85)",  sh: "0 0 12px rgba(34,197,94,0.75)",                                    bd: "rgba(34,197,94,0.92)" };
-  return              { bg: "rgba(74,222,128,1)",     sh: "0 0 16px rgba(74,222,128,1), 0 0 28px rgba(74,222,128,0.5)",      bd: "#4ade80"              };
+
+
+  let level;
+  if      (count === 1)  level = 0;   // dim
+  else if (count <= 3)   level = 1;
+  else if (count <= 6)   level = 2;
+  else if (count <= 10)  level = 3;
+  else                   level = 4;   // 11+ → always max glow
+
+  
+  if (maxCount >= 2 && count === maxCount) level = 4;
+
+  return COLOR_LEVELS[level];
 }
 
 function isInViewport(el) {
@@ -142,7 +163,7 @@ function isInViewport(el) {
 }
 
 
-export default function HistoryHeatmap({ themeConfig }) {
+export default function HistoryHeatmap({ themeConfig, userId }) {
   const currentYear = new Date().getFullYear();
 
   const buildYearOptions = useCallback(() => {
@@ -224,7 +245,10 @@ export default function HistoryHeatmap({ themeConfig }) {
     recalcCellSize(rawSections);
 
     try {
-      const res     = await api.get(`/GrowTyping/v1/stats/history-heatmap?year=${year}`);
+      const endpoint = userId
+        ? `/GrowTyping/v1/stats/public-history-heatmap/${userId}?year=${year}`
+        : `/GrowTyping/v1/stats/history-heatmap?year=${year}`;
+      const res     = await api.get(endpoint);
       const apiData = res.data?.data || [];
 
       apiData.forEach(d => {
@@ -254,7 +278,7 @@ export default function HistoryHeatmap({ themeConfig }) {
     setLoading(false);
     dataReady.current = true;
     if (isInViewport(cardRef.current)) startAnimation();
-  }, [currentYear, recalcCellSize, startAnimation]);
+  }, [currentYear, userId, recalcCellSize, startAnimation]);
 
   useEffect(() => { fetchData(selectedYear); }, [selectedYear, fetchData]);
 

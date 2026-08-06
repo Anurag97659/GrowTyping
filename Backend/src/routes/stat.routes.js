@@ -34,6 +34,7 @@ router.route("/leaderboard").get(getLeaderboard);
 router.route("/history-heatmap").get(verifyJWT, getHistoryHeatmap);
 
 router.route("/public-telemetry/:userId").get(getUserPublicTelemetry);
+router.route("/public-history-heatmap/:userId").get(getHistoryHeatmap);
 router.route("/public/:userId").get(getUserPublicStats);
 router.route("/public-best/:userId").get(getUserBestRecords);
 router.route("/public-streak/:userId").get(getUserTypingStreak);

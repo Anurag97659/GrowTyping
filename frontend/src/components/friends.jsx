@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useTheme } from "../context/ThemeContext";
+import HistoryHeatmap from "./HistoryHeatmap";
 import {
   FiArrowLeft,
   FiSearch,
@@ -604,6 +605,7 @@ export default function Friends() {
             ) : selectedUserStats.stats ? (
               <FriendTelemetry
                 stats={selectedUserStats.stats}
+                userId={selectedUserStats.userId}
                 range={
                   STAT_RANGES.find((range) => range.id === selectedStatsRange)
                     ?.label
@@ -623,7 +625,7 @@ export default function Friends() {
   );
 }
 
-function FriendTelemetry({ stats, range, themeConfig, refreshing }) {
+function FriendTelemetry({ stats, userId, range, themeConfig, refreshing }) {
   const overview = stats.overview || {};
   const allTimeRecords = Object.entries(stats.allTimeBestRecords || {});
   const rangeRecords = Object.entries(stats.rangeBestRecords || {});
@@ -816,6 +818,7 @@ function FriendTelemetry({ stats, range, themeConfig, refreshing }) {
           </div>
         </div>
       </section>
+      {/* <HistoryHeatmap themeConfig={themeConfig} userId={userId} /> */}
     </div>
   );
 }
