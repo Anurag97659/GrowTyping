@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import api from "../lib/api";
 import { useTheme } from "../context/ThemeContext";
 import HistoryHeatmap from "./HistoryHeatmap";
@@ -34,6 +46,78 @@ const RANGES = [
   { id: "thisYear", label: "This Year" },
   { id: "allTime", label: "All Time" },
 ];
+
+const CustomChartTooltip = ({ active, payload, label, formatTime }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-slate-900/95 border border-slate-700/80 p-3.5 rounded-xl shadow-2xl text-xs space-y-2 backdrop-blur-md min-w-[200px]">
+        <p className="font-extrabold text-slate-200 border-b border-slate-700/60 pb-1.5 flex items-center justify-between">
+          <span> Date: {label}</span>
+        </p>
+        <div className="space-y-1.5 pt-0.5">
+          <p className="flex items-center justify-between gap-4 text-emerald-400 font-medium">
+            <span> Avg Speed:</span>
+            <span className="font-bold">{data.avgWpm} WPM</span>
+          </p>
+          <p className="flex items-center justify-between gap-4 text-indigo-400 font-medium">
+            <span> Avg Accuracy:</span>
+            <span className="font-bold">{data.avgAccuracy}%</span>
+          </p>
+          <p className="flex items-center justify-between gap-4 text-amber-400 font-medium">
+            <span>Tests Given:</span>
+            <span className="font-bold">{data.count}</span>
+          </p>
+          <p className="flex items-center justify-between gap-4 text-cyan-400 font-medium border-t border-slate-800 pt-1.5">
+            <span> Total Time:</span>
+            <span className="font-bold">{formatTime ? formatTime(data.totalTime) : `${data.totalTime}s`}</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomBarTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-slate-900/95 border border-slate-700/80 p-3 rounded-xl shadow-2xl text-xs space-y-1.5 backdrop-blur-md min-w-[160px]">
+        <p className="font-extrabold text-slate-200 border-b border-slate-700/60 pb-1 mb-1 font-mono">
+           Test Mode: {label}
+        </p>
+        <p className="flex items-center justify-between gap-3 text-emerald-400 font-medium">
+          <span> Avg Speed:</span>
+          <span className="font-bold">{data.avgWpm} WPM</span>
+        </p>
+        <p className="flex items-center justify-between gap-3 text-indigo-400 font-medium">
+          <span> Avg Accuracy:</span>
+          <span className="font-bold">{data.avgAccuracy}%</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomWeakKeyTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-slate-900/95 border border-slate-700/80 p-2.5 rounded-xl shadow-xl text-xs space-y-1 backdrop-blur-md min-w-[140px]">
+        <p className="font-extrabold text-rose-400 border-b border-slate-700/60 pb-1 mb-1 font-mono">
+          Key: <span className="uppercase text-slate-100 font-black">{data.key}</span>
+        </p>
+        <p className="flex items-center justify-between gap-3 text-slate-300 font-medium">
+          <span> Mistakes:</span>
+          <span className="font-bold text-rose-400">{data.mistakes}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -211,44 +295,22 @@ export default function Dashboard() {
 
   // ── Graph Data Computations ───────────────────────────────────────────────
 
-  // Line graph: daily WPM & accuracy trend points (with axes)
-  const LINE_PL = 45; // plot left (room for Y-axis labels)
-  const LINE_PT = 20; // plot top
-  const LINE_W  = 540; // plot area width
-  const LINE_H  = 120; // plot area height
-
-  const getTrendPoints = (values, maxVal) => {
-    if (!values || values.length === 0) return "";
-    const max = Math.max(maxVal || 1, 1);
-    return values
-      .map((val, idx) => {
-        const x = values.length === 1
-          ? LINE_PL + LINE_W / 2
-          : LINE_PL + (idx / (values.length - 1)) * LINE_W;
-        const y = LINE_PT + LINE_H - (val / max) * LINE_H;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ");
-  };
-
-  const wpmTrendValues    = dailyProgress.map((p) => Math.round(p.avgWpm || 0));
-  const maxWpmInTrend     = Math.max(...wpmTrendValues, 100);
-  const accuracyTrendValues = dailyProgress.map((p) => Number((p.avgAccuracy || 0).toFixed(1)));
-
-  // X-axis date labels for line charts
-  const xDateLabels = dailyProgress.map((p) => {
+  // Recharts combined line graph data
+  const rechartsData = dailyProgress.map((p) => {
     const raw = p._id?.date || p._id || p.date || "";
-    if (!raw) return "";
-    const d = new Date(raw);
-    return isNaN(d) ? String(raw).slice(5) : `${d.getMonth() + 1}/${d.getDate()}`;
+    let dateStr = "";
+    if (raw) {
+      const d = new Date(raw);
+      dateStr = isNaN(d.getTime()) ? String(raw).slice(5) : `${d.getMonth() + 1}/${d.getDate()}`;
+    }
+    return {
+      date: dateStr,
+      avgWpm: Math.round(p.avgWpm || 0),
+      avgAccuracy: Number((p.avgAccuracy || 0).toFixed(1)),
+      count: p.count || p.testsCount || p.totalTests || 0,
+      totalTime: p.totalTime || 0,
+    };
   });
-
-  // Y-axis ticks helper
-  const yTicks = (max, count = 5) =>
-    Array.from({ length: count + 1 }, (_, i) => ({
-      val: Math.round((max / count) * i),
-      pct: i / count,
-    }));
 
   // Bar charts: avg WPM and accuracy by testType computed from historyList
   const wpmByTypeMap  = {};
@@ -261,18 +323,17 @@ export default function Dashboard() {
     cntByTypeMap[t]  = (cntByTypeMap[t]  || 0) + 1;
   });
   const TYPE_ORDER = ["15s", "30s", "60s", "custom"];
-  const avgWpmByType = TYPE_ORDER
-    .filter((t) => cntByTypeMap[t] > 0)
-    .map((t) => ({
-      type: t,
-      avg: Math.round((wpmByTypeMap[t] / cntByTypeMap[t]) * 10) / 10,
-    }));
-  const avgAccByType = TYPE_ORDER
-    .filter((t) => cntByTypeMap[t] > 0)
-    .map((t) => ({
-      type: t,
-      avg: Math.round((accByTypeMap[t] / cntByTypeMap[t]) * 10) / 10,
-    }));
+  const combinedTypeStats = TYPE_ORDER
+    .map((t) => {
+      const cnt = cntByTypeMap[t] || 0;
+      if (cnt === 0) return null;
+      return {
+        type: t,
+        avgWpm: Math.round((wpmByTypeMap[t] / cnt) * 10) / 10,
+        avgAccuracy: Math.round((accByTypeMap[t] / cnt) * 10) / 10,
+      };
+    })
+    .filter(Boolean);
 
   // Top 5 weak keys from keyStatsMap sorted by mistake count
   const topWeakKeys = Object.entries(keyStatsMap)
@@ -395,9 +456,9 @@ export default function Dashboard() {
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>
                     Peak Speed
                   </span>
-                  <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
+                  {/* <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
                     <FiZap className={`text-base ${themeConfig.accent}`} />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className={`text-3xl font-black ${themeConfig.accent}`}>
@@ -418,9 +479,9 @@ export default function Dashboard() {
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>
                     Average Speed
                   </span>
-                  <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
+                  {/* <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
                     <FiActivity className="text-base text-emerald-400" />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-black text-emerald-400">
@@ -437,9 +498,9 @@ export default function Dashboard() {
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>
                     Accuracy Rate
                   </span>
-                  <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
+                  {/* <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
                     <FiCheckCircle className="text-base text-indigo-400" />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-black text-indigo-400">
@@ -455,9 +516,9 @@ export default function Dashboard() {
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>
                     Total Sessions
                   </span>
-                  <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
+                  {/* <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
                     <FiLayers className="text-base text-amber-400" />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl font-black text-amber-400">
@@ -474,9 +535,9 @@ export default function Dashboard() {
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>
                     Total Time & Streak
                   </span>
-                  <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
+                  {/* <div className={`p-2 rounded-lg ${themeConfig.cardInset}`}>
                     <FiClock className="text-base text-cyan-400" />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-black text-cyan-400">
@@ -489,336 +550,7 @@ export default function Dashboard() {
                 <p className={`text-[11px] ${themeConfig.mutedText} mt-2`}>Time spent typing</p>
               </div>
             </div>
-
-            {/* Enhanced Progress Graphs Section */}
-            {dailyProgress.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Graph 1: WPM Speed Progress Trend with X/Y Axes */}
-                <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-3`}>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                      <h3 className={`text-base font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
-                        <FiTrendingUp className={themeConfig.accent} /> Speed Progression (WPM)
-                      </h3>
-                      <p className={`text-xs ${themeConfig.mutedText}`}>Daily average speed over time</p>
-                    </div>
-                    <span className={`text-xs font-bold px-3 py-1 rounded-lg ${themeConfig.cardInset} ${themeConfig.accent}`}>
-                      Latest: {Math.round(dailyProgress[dailyProgress.length - 1]?.avgWpm || 0)} WPM
-                    </span>
-                  </div>
-
-                  <div className={`${themeConfig.cardInset} pt-4 pb-2 px-2 overflow-x-auto`}>
-                    <svg viewBox="0 0 630 175" className="w-full min-w-[420px]">
-                      <defs>
-                        <linearGradient id="wpmAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#34d399" stopOpacity="0.25"/>
-                          <stop offset="100%" stopColor="#34d399" stopOpacity="0"/>
-                        </linearGradient>
-                      </defs>
-                      {/* Y-axis grid lines + labels */}
-                      {yTicks(maxWpmInTrend).map((t) => {
-                        const yPos = LINE_PT + LINE_H - t.pct * LINE_H;
-                        return (
-                          <g key={t.val}>
-                            <line x1={LINE_PL} x2={LINE_PL + LINE_W} y1={yPos} y2={yPos}
-                              stroke="rgba(148,163,184,0.12)" strokeWidth="1" strokeDasharray="4 3"/>
-                            <text x={LINE_PL - 6} y={yPos + 4} fill="rgba(148,163,184,0.7)"
-                              fontSize="9" textAnchor="end">{t.val}</text>
-                          </g>
-                        );
-                      })}
-                      {/* Y-axis line */}
-                      <line x1={LINE_PL} x2={LINE_PL} y1={LINE_PT} y2={LINE_PT + LINE_H}
-                        stroke="rgba(148,163,184,0.3)" strokeWidth="1"/>
-                      {/* X-axis line */}
-                      <line x1={LINE_PL} x2={LINE_PL + LINE_W} y1={LINE_PT + LINE_H} y2={LINE_PT + LINE_H}
-                        stroke="rgba(148,163,184,0.3)" strokeWidth="1"/>
-                      {/* Area fill */}
-                      {wpmTrendValues.length > 1 && (
-                        <polygon
-                          fill="url(#wpmAreaGrad)"
-                          points={`${getTrendPoints(wpmTrendValues, maxWpmInTrend)} ${LINE_PL + LINE_W},${LINE_PT + LINE_H} ${LINE_PL},${LINE_PT + LINE_H}`}
-                        />
-                      )}
-                      {/* Trend line */}
-                      <polyline fill="none" stroke="#34d399" strokeWidth="2.5"
-                        strokeLinecap="round" strokeLinejoin="round"
-                        points={getTrendPoints(wpmTrendValues, maxWpmInTrend)}/>
-                      {/* Data points */}
-                      {wpmTrendValues.map((v, i) => {
-                        const x = wpmTrendValues.length === 1 ? LINE_PL + LINE_W / 2
-                          : LINE_PL + (i / (wpmTrendValues.length - 1)) * LINE_W;
-                        const y = LINE_PT + LINE_H - (v / Math.max(maxWpmInTrend, 1)) * LINE_H;
-                        return <circle key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} r="3.5" fill="#34d399" stroke="#0f172a" strokeWidth="1.5"/>;
-                      })}
-                      {/* X-axis date labels (show max 6 to avoid clutter) */}
-                      {xDateLabels
-                        .filter((_, i, arr) => arr.length <= 6 || i % Math.ceil(arr.length / 6) === 0 || i === arr.length - 1)
-                        .map((label, i, filtered) => {
-                          const origIdx = xDateLabels.indexOf(label);
-                          const x = xDateLabels.length === 1 ? LINE_PL + LINE_W / 2
-                            : LINE_PL + (origIdx / (xDateLabels.length - 1)) * LINE_W;
-                          return (
-                            <text key={i} x={x.toFixed(1)} y={LINE_PT + LINE_H + 14}
-                              fill="rgba(148,163,184,0.7)" fontSize="9" textAnchor="middle">{label}</text>
-                          );
-                        })}
-                      {/* Y axis label */}
-                      <text x="10" y={LINE_PT + LINE_H / 2} fill="rgba(148,163,184,0.6)"
-                        fontSize="9" textAnchor="middle" transform={`rotate(-90, 10, ${LINE_PT + LINE_H / 2})`}>WPM</text>
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Graph 2: Accuracy Progress Trend with X/Y Axes */}
-                <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-3`}>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                      <h3 className={`text-base font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
-                        <FiCheckCircle className="text-indigo-400" /> Accuracy Progression (%)
-                      </h3>
-                      <p className={`text-xs ${themeConfig.mutedText}`}>Daily average accuracy percentage</p>
-                    </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400">
-                      Latest: {Number(dailyProgress[dailyProgress.length - 1]?.avgAccuracy || 0).toFixed(1)}%
-                    </span>
-                  </div>
-
-                  <div className={`${themeConfig.cardInset} pt-4 pb-2 px-2 overflow-x-auto`}>
-                    <svg viewBox="0 0 630 175" className="w-full min-w-[420px]">
-                      <defs>
-                        <linearGradient id="accAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#818cf8" stopOpacity="0.25"/>
-                          <stop offset="100%" stopColor="#818cf8" stopOpacity="0"/>
-                        </linearGradient>
-                      </defs>
-                      {yTicks(100).map((t) => {
-                        const yPos = LINE_PT + LINE_H - t.pct * LINE_H;
-                        return (
-                          <g key={t.val}>
-                            <line x1={LINE_PL} x2={LINE_PL + LINE_W} y1={yPos} y2={yPos}
-                              stroke="rgba(148,163,184,0.12)" strokeWidth="1" strokeDasharray="4 3"/>
-                            <text x={LINE_PL - 6} y={yPos + 4} fill="rgba(148,163,184,0.7)"
-                              fontSize="9" textAnchor="end">{t.val}%</text>
-                          </g>
-                        );
-                      })}
-                      <line x1={LINE_PL} x2={LINE_PL} y1={LINE_PT} y2={LINE_PT + LINE_H}
-                        stroke="rgba(148,163,184,0.3)" strokeWidth="1"/>
-                      <line x1={LINE_PL} x2={LINE_PL + LINE_W} y1={LINE_PT + LINE_H} y2={LINE_PT + LINE_H}
-                        stroke="rgba(148,163,184,0.3)" strokeWidth="1"/>
-                      {accuracyTrendValues.length > 1 && (
-                        <polygon
-                          fill="url(#accAreaGrad)"
-                          points={`${getTrendPoints(accuracyTrendValues, 100)} ${LINE_PL + LINE_W},${LINE_PT + LINE_H} ${LINE_PL},${LINE_PT + LINE_H}`}
-                        />
-                      )}
-                      <polyline fill="none" stroke="#818cf8" strokeWidth="2.5"
-                        strokeLinecap="round" strokeLinejoin="round"
-                        points={getTrendPoints(accuracyTrendValues, 100)}/>
-                      {accuracyTrendValues.map((v, i) => {
-                        const x = accuracyTrendValues.length === 1 ? LINE_PL + LINE_W / 2
-                          : LINE_PL + (i / (accuracyTrendValues.length - 1)) * LINE_W;
-                        const y = LINE_PT + LINE_H - (v / 100) * LINE_H;
-                        return <circle key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} r="3.5" fill="#818cf8" stroke="#0f172a" strokeWidth="1.5"/>;
-                      })}
-                      {xDateLabels
-                        .filter((_, i, arr) => arr.length <= 6 || i % Math.ceil(arr.length / 6) === 0 || i === arr.length - 1)
-                        .map((label, i) => {
-                          const origIdx = xDateLabels.indexOf(label);
-                          const x = xDateLabels.length === 1 ? LINE_PL + LINE_W / 2
-                            : LINE_PL + (origIdx / (xDateLabels.length - 1)) * LINE_W;
-                          return (
-                            <text key={i} x={x.toFixed(1)} y={LINE_PT + LINE_H + 14}
-                              fill="rgba(148,163,184,0.7)" fontSize="9" textAnchor="middle">{label}</text>
-                          );
-                        })}
-                      <text x="10" y={LINE_PT + LINE_H / 2} fill="rgba(148,163,184,0.6)"
-                        fontSize="9" textAnchor="middle" transform={`rotate(-90, 10, ${LINE_PT + LINE_H / 2})`}>%</text>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── History Activity Heatmap ─────────────────────────────── */}
-            <HistoryHeatmap themeConfig={themeConfig} />
-
-            {/* Bar Charts Row: Avg WPM by Type | Avg Accuracy by Type | Top Weak Keys */}
-            {(avgWpmByType.length > 0 || topWeakKeys.length > 0) && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Bar Chart 1: Avg WPM by Type */}
-                <div className={`${themeConfig.card} p-5 border ${themeConfig.border} space-y-3`}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-                    <h3 className={`text-xs font-extrabold uppercase tracking-widest ${themeConfig.mutedText}`}>Avg WPM by Type</h3>
-                  </div>
-                  <svg viewBox="0 0 280 160" className="w-full">
-                    {(() => {
-                      const data = avgWpmByType;
-                      const max = Math.max(...data.map(d => d.avg), 1);
-                      const PL = 32, PT = 20, PW = 230, PH = 100;
-                      const bw = data.length > 0 ? (PW / data.length) - 8 : 40;
-                      return (
-                        <>
-                          <defs>
-                            <linearGradient id="wpmBarGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#34d399"/>
-                              <stop offset="100%" stopColor="#059669"/>
-                            </linearGradient>
-                          </defs>
-                          {/* Y axis ticks */}
-                          {[0, 0.5, 1].map((t) => {
-                            const y = PT + PH - t * PH;
-                            return (
-                              <g key={t}>
-                                <line x1={PL} x2={PL + PW} y1={y} y2={y} stroke="rgba(148,163,184,0.1)" strokeWidth="1"/>
-                                <text x={PL - 4} y={y + 3} fill="rgba(148,163,184,0.6)" fontSize="8" textAnchor="end">
-                                  {Math.round(max * t)}
-                                </text>
-                              </g>
-                            );
-                          })}
-                          <line x1={PL} x2={PL} y1={PT} y2={PT + PH} stroke="rgba(148,163,184,0.25)" strokeWidth="1"/>
-                          <line x1={PL} x2={PL + PW} y1={PT + PH} y2={PT + PH} stroke="rgba(148,163,184,0.25)" strokeWidth="1"/>
-                          {data.map((d, i) => {
-                            const bh = Math.max((d.avg / max) * PH, 2);
-                            const x = PL + i * (PW / data.length) + 4;
-                            const y = PT + PH - bh;
-                            const mid = x + bw / 2;
-                            return (
-                              <g key={d.type}>
-                                <rect x={x} y={y} width={bw} height={bh} fill="url(#wpmBarGrad)" rx="4"/>
-                                <text x={mid} y={y - 4} fill="#34d399" fontSize="9" textAnchor="middle" fontWeight="bold">{d.avg}</text>
-                                <text x={mid} y={PT + PH + 13} fill="rgba(148,163,184,0.7)" fontSize="9" textAnchor="middle">{d.type}</text>
-                              </g>
-                            );
-                          })}
-                          <text x={PL - 16} y={PT + PH / 2} fill="rgba(148,163,184,0.5)" fontSize="8" textAnchor="middle"
-                            transform={`rotate(-90, ${PL - 16}, ${PT + PH / 2})`}>WPM</text>
-                        </>
-                      );
-                    })()}
-                  </svg>
-                </div>
-
-                {/* Bar Chart 2: Avg Accuracy by Type */}
-                <div className={`${themeConfig.card} p-5 border ${themeConfig.border} space-y-3`}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-teal-400 inline-block"></span>
-                    <h3 className={`text-xs font-extrabold uppercase tracking-widest ${themeConfig.mutedText}`}>Avg Accuracy by Type</h3>
-                  </div>
-                  <svg viewBox="0 0 280 160" className="w-full">
-                    {(() => {
-                      const data = avgAccByType;
-                      const max = 100;
-                      const PL = 32, PT = 20, PW = 230, PH = 100;
-                      const bw = data.length > 0 ? (PW / data.length) - 8 : 40;
-                      return (
-                        <>
-                          <defs>
-                            <linearGradient id="accBarGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#2dd4bf"/>
-                              <stop offset="100%" stopColor="#0d9488"/>
-                            </linearGradient>
-                          </defs>
-                          {[0, 0.5, 1].map((t) => {
-                            const y = PT + PH - t * PH;
-                            return (
-                              <g key={t}>
-                                <line x1={PL} x2={PL + PW} y1={y} y2={y} stroke="rgba(148,163,184,0.1)" strokeWidth="1"/>
-                                <text x={PL - 4} y={y + 3} fill="rgba(148,163,184,0.6)" fontSize="8" textAnchor="end">
-                                  {Math.round(max * t)}%
-                                </text>
-                              </g>
-                            );
-                          })}
-                          <line x1={PL} x2={PL} y1={PT} y2={PT + PH} stroke="rgba(148,163,184,0.25)" strokeWidth="1"/>
-                          <line x1={PL} x2={PL + PW} y1={PT + PH} y2={PT + PH} stroke="rgba(148,163,184,0.25)" strokeWidth="1"/>
-                          {data.map((d, i) => {
-                            const bh = Math.max((d.avg / max) * PH, 2);
-                            const x = PL + i * (PW / data.length) + 4;
-                            const y = PT + PH - bh;
-                            const mid = x + bw / 2;
-                            return (
-                              <g key={d.type}>
-                                <rect x={x} y={y} width={bw} height={bh} fill="url(#accBarGrad)" rx="4"/>
-                                <text x={mid} y={y - 4} fill="#2dd4bf" fontSize="9" textAnchor="middle" fontWeight="bold">{d.avg}%</text>
-                                <text x={mid} y={PT + PH + 13} fill="rgba(148,163,184,0.7)" fontSize="9" textAnchor="middle">{d.type}</text>
-                              </g>
-                            );
-                          })}
-                          <text x={PL - 16} y={PT + PH / 2} fill="rgba(148,163,184,0.5)" fontSize="8" textAnchor="middle"
-                            transform={`rotate(-90, ${PL - 16}, ${PT + PH / 2})`}>%</text>
-                        </>
-                      );
-                    })()}
-                  </svg>
-                </div>
-
-                {/* Bar Chart 3: Top Weak Keys */}
-                <div className={`${themeConfig.card} p-5 border ${themeConfig.border} space-y-3`}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>
-                    <h3 className={`text-xs font-extrabold uppercase tracking-widest ${themeConfig.mutedText}`}>Top Weak Keys</h3>
-                  </div>
-                  {topWeakKeys.length === 0 ? (
-                    <p className={`text-xs ${themeConfig.mutedText} py-8 text-center`}>No error data for this range</p>
-                  ) : (
-                    <svg viewBox="0 0 280 160" className="w-full">
-                      {(() => {
-                        const data = topWeakKeys;
-                        const max = Math.max(...data.map(d => d.mistakes), 1);
-                        const PL = 32, PT = 20, PW = 230, PH = 100;
-                        const bw = data.length > 0 ? (PW / data.length) - 8 : 40;
-                        return (
-                          <>
-                            <defs>
-                              <linearGradient id="weakBarGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#fb7185"/>
-                                <stop offset="100%" stopColor="#e11d48"/>
-                              </linearGradient>
-                            </defs>
-                            {[0, 0.5, 1].map((t) => {
-                              const y = PT + PH - t * PH;
-                              return (
-                                <g key={t}>
-                                  <line x1={PL} x2={PL + PW} y1={y} y2={y} stroke="rgba(148,163,184,0.1)" strokeWidth="1"/>
-                                  <text x={PL - 4} y={y + 3} fill="rgba(148,163,184,0.6)" fontSize="8" textAnchor="end">
-                                    {Math.round(max * t)}
-                                  </text>
-                                </g>
-                              );
-                            })}
-                            <line x1={PL} x2={PL} y1={PT} y2={PT + PH} stroke="rgba(148,163,184,0.25)" strokeWidth="1"/>
-                            <line x1={PL} x2={PL + PW} y1={PT + PH} y2={PT + PH} stroke="rgba(148,163,184,0.25)" strokeWidth="1"/>
-                            {data.map((d, i) => {
-                              const bh = Math.max((d.mistakes / max) * PH, 2);
-                              const x = PL + i * (PW / data.length) + 4;
-                              const y = PT + PH - bh;
-                              const mid = x + bw / 2;
-                              return (
-                                <g key={d.key}>
-                                  <rect x={x} y={y} width={bw} height={bh} fill="url(#weakBarGrad)" rx="4"/>
-                                  <text x={mid} y={y - 4} fill="#fb7185" fontSize="9" textAnchor="middle" fontWeight="bold">{d.mistakes}</text>
-                                  <text x={mid} y={PT + PH + 13} fill="rgba(148,163,184,0.7)" fontSize="9" textAnchor="middle">{d.key}</text>
-                                </g>
-                              );
-                            })}
-                            <text x={PL - 16} y={PT + PH / 2} fill="rgba(148,163,184,0.5)" fontSize="8" textAnchor="middle"
-                              transform={`rotate(-90, ${PL - 16}, ${PT + PH / 2})`}>Errors</text>
-                          </>
-                        );
-                      })()}
-                    </svg>
-                  )}
-                </div>
-
-              </div>
-            )}
-
-            {/* Best Records Cards */}
+{/* Best Records Cards */}
             <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>
               <h2 className={`text-lg font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
                 <FiAward className="text-amber-400 text-xl" />{" "}
@@ -862,6 +594,217 @@ export default function Dashboard() {
                 </p>
               )}
             </div>
+
+
+
+
+
+            {/* Enhanced Progress Graphs Section - Combined Recharts Line Chart */}
+            {dailyProgress.length > 0 && (
+              <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h3 className={`text-base font-extrabold ${themeConfig.bodyText} flex items-center gap-2`}>
+                      Speed, Accuracy & Activity Progression
+                    </h3>
+                    <p className={`text-xs ${themeConfig.mutedText}`}>
+                      Daily typing speed (WPM), accuracy (%), tests given, and typing time
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className={`text-xs font-bold px-3 py-1 rounded-lg ${themeConfig.cardInset} ${themeConfig.accent}`}>
+                      Latest WPM: {Math.round(dailyProgress[dailyProgress.length - 1]?.avgWpm || 0)}
+                    </span>
+                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400">
+                      Latest Acc: {Number(dailyProgress[dailyProgress.length - 1]?.avgAccuracy || 0).toFixed(1)}%
+                    </span>
+                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-amber-500/10 text-amber-400">
+                      Latest Tests: {dailyProgress[dailyProgress.length - 1]?.count || dailyProgress[dailyProgress.length - 1]?.testsCount || 0}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={`${themeConfig.cardInset} p-4 rounded-xl h-[340px] w-full`}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={rechartsData}
+                      margin={{
+                        top: 10,
+                        right: 60,
+                        left: 0,
+                        bottom: 0,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+                      <XAxis
+                        dataKey="date"
+                        stroke="#94a3b8"
+                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        stroke="#34d399"
+                        tick={{ fill: "#34d399", fontSize: 11 }}
+                        domain={[0, 'auto']}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        stroke="#818cf8"
+                        tick={{ fill: "#818cf8", fontSize: 11 }}
+                        domain={[0, 100]}
+                      />
+                      <YAxis
+                        yAxisId="count"
+                        orientation="right"
+                        stroke="#f59e0b"
+                        tick={{ fill: "#f59e0b", fontSize: 11 }}
+                        domain={[0, 'auto']}
+                        allowDecimals={false}
+                        dx={30}
+                      />
+                      <Tooltip content={<CustomChartTooltip formatTime={formatTime} />} />
+                      <Legend wrapperStyle={{ paddingTop: "10px" }} />
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="avgWpm"
+                        name="Avg Speed (WPM)"
+                        stroke="#34d399"
+                        strokeWidth={2.5}
+                        activeDot={{ r: 7 }}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="avgAccuracy"
+                        name="Avg Accuracy (%)"
+                        stroke="#818cf8"
+                        strokeWidth={2.5}
+                        activeDot={{ r: 7 }}
+                      />
+                      <Line
+                        yAxisId="count"
+                        type="monotone"
+                        dataKey="count"
+                        name="Tests Given"
+                        stroke="#f59e0b"
+                        strokeWidth={2.5}
+                        activeDot={{ r: 7 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* ── History Activity Heatmap ─────────────────────────────── */}
+            <HistoryHeatmap themeConfig={themeConfig} />
+
+            {/* Bar Charts Row: Combined Performance by Test Type (15s, 30s, 60s, custom) | Top Weak Keys */}
+            {(combinedTypeStats.length > 0 || topWeakKeys.length > 0) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Combined Grouped Bar Chart: WPM & Accuracy by Test Type */}
+                <div className={`lg:col-span-2 ${themeConfig.card} p-5 border ${themeConfig.border} space-y-3`}>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                      <h3 className={`text-xs font-extrabold uppercase tracking-widest ${themeConfig.mutedText}`}>
+                        Performance by Test Type (WPM & Accuracy)
+                      </h3>
+                    </div>
+                    <p className={`text-[11px] ${themeConfig.mutedText}`}>Side-by-side comparison per mode</p>
+                  </div>
+
+                  <div className={`${themeConfig.cardInset} p-3 rounded-xl h-[230px] w-full`}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={combinedTypeStats}
+                        barGap={0}
+                        barCategoryGap="25%"
+                        margin={{ top: 15, right: 15, left: -10, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+                        <XAxis
+                          dataKey="type"
+                          stroke="#94a3b8"
+                          tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: "bold" }}
+                        />
+                        <YAxis
+                          stroke="#94a3b8"
+                          tick={{ fill: "#94a3b8", fontSize: 11 }}
+                          domain={[0, 'auto']}
+                        />
+                        <Tooltip content={<CustomBarTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }} />
+                        <Bar
+                          dataKey="avgWpm"
+                          name="Avg WPM"
+                          fill="#34d399"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="avgAccuracy"
+                          name="Avg Accuracy (%)"
+                          fill="#818cf8"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Bar Chart 2: Top Weak Keys (Horizontal Flipped Layout) */}
+                <div className={`${themeConfig.card} p-5 border ${themeConfig.border} space-y-3`}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>
+                    <h3 className={`text-xs font-extrabold uppercase tracking-widest ${themeConfig.mutedText}`}>
+                      Top Weak Keys
+                    </h3>
+                  </div>
+                  {topWeakKeys.length === 0 ? (
+                    <p className={`text-xs ${themeConfig.mutedText} py-12 text-center`}>No error data for this range</p>
+                  ) : (
+                    <div className={`${themeConfig.cardInset} p-3 rounded-xl h-[230px] w-full`}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          layout="vertical"
+                          data={topWeakKeys}
+                          margin={{ top: 5, right: 15, left: -10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+                          <XAxis
+                            type="number"
+                            stroke="#94a3b8"
+                            tick={{ fill: "#94a3b8", fontSize: 11 }}
+                            allowDecimals={false}
+                          />
+                          <YAxis
+                            dataKey="key"
+                            type="category"
+                            stroke="#94a3b8"
+                            tick={{ fill: "#fb7185", fontSize: 12, fontWeight: "bold" }}
+                            width={30}
+                          />
+                          <Tooltip content={<CustomWeakKeyTooltip />} />
+                          <Bar
+                            dataKey="mistakes"
+                            name="Mistakes"
+                            fill="#fb7185"
+                            radius={[0, 4, 4, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
+            {/* Best Records Cards */}
+            
 
             {/* Keyboard Accuracy Heatmap Section with Fixed Tooltip Position */}
             <div className={`${themeConfig.card} p-6 border ${themeConfig.border} space-y-4`}>

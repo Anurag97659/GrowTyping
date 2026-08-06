@@ -238,7 +238,8 @@ const getDailyProgress = asyncHandler(async(req, res) =>{
                 },
                 avgWpm:{ $avg: "$wpm" },
                 avgAccuracy:{ $avg: "$accuracy" },
-                totalTime:{ $sum: "$duration" }
+                totalTime:{ $sum: "$duration" },
+                count:{ $sum: 1 }
             }
         },
       { $sort:{ "_id.date": 1 } }
