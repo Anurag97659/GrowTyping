@@ -315,6 +315,8 @@ export default function RacePage() {
 
   const [timeLeft, setTimeLeft] = useState(30);
   const [raceStartedAt, setRaceStartedAt] = useState(null);
+  const [countdownVal, setCountdownVal] = useState(0);
+  const countdownValRef = useRef(0);
   const raceTimerRef = useRef(null);
 
   const containerRef = useRef(null);
@@ -384,6 +386,8 @@ export default function RacePage() {
       setFinishedUsers([]);
       setParticipants({});
       setRaceStartedAt(startedAt);
+      setCountdownVal(5);
+      countdownValRef.current = 5;
       setPageState("racing");
       setTimeout(() => {
         hiddenInputRef.current?.focus();
@@ -415,6 +419,8 @@ export default function RacePage() {
       typedCharsRef.current = [];
       setFinishedUsers([]);
       setParticipants({});
+      setCountdownVal(0);
+      countdownValRef.current = 0;
     };
 
     const onKicked = () => {
@@ -459,17 +465,29 @@ export default function RacePage() {
     const duration = room?.settings?.duration || 30;
 
     raceTimerRef.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - raceStartedAt) / 1000);
-      const remaining = Math.max(0, duration - elapsed);
-      setTimeLeft(remaining);
-      if (remaining <= 0) {
-        clearInterval(raceTimerRef.current);
-        if (!finishedRef.current) handleRaceFinish(true);
+      const now = Date.now();
+      const countdownDiff = raceStartedAt - now;
+
+      if (countdownDiff > 0) {
+        const cVal = Math.ceil(countdownDiff / 1000);
+        setCountdownVal(cVal);
+        countdownValRef.current = cVal;
+        setTimeLeft(duration);
+      } else {
+        setCountdownVal(0);
+        countdownValRef.current = 0;
+        const elapsed = Math.floor((now - raceStartedAt) / 1000);
+        const remaining = Math.max(0, duration - elapsed);
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          clearInterval(raceTimerRef.current);
+          if (!finishedRef.current) handleRaceFinish(true);
+        }
       }
-    }, 500);
+    }, 100);
 
     return () => clearInterval(raceTimerRef.current);
-  }, [pageState, raceStartedAt]);
+  }, [pageState, raceStartedAt, room?.settings?.duration]);
 
   const allLines = useMemo(() => buildLines(raceText), [raceText]);
 
@@ -623,7 +641,12 @@ export default function RacePage() {
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (pageState !== "racing" || finishedRef.current) return;
+      if (
+        pageState !== "racing" ||
+        finishedRef.current ||
+        countdownValRef.current > 0
+      )
+        return;
       if (e.key === "Escape") return;
       if (e.key === "Tab") {
         e.preventDefault();
@@ -1257,9 +1280,15 @@ export default function RacePage() {
             {/* Timer */}
             <div className="flex items-center justify-between mb-4">
               <div
-                className={`text-4xl font-black ${timeLeft <= 5 ? "text-red-500" : themeConfig.accent} transition-colors`}
+                className={`text-4xl font-black ${
+                  countdownVal > 0
+                    ? "text-amber-400 animate-pulse"
+                    : timeLeft <= 5
+                    ? "text-red-500"
+                    : themeConfig.accent
+                } transition-colors`}
               >
-                {timeLeft}s
+                {countdownVal > 0 ? `Get Ready: ${countdownVal}s` : `${timeLeft}s`}
               </div>
               <div className={`text-sm font-semibold ${themeConfig.mutedText}`}>
                 {myProgress}% complete
@@ -1349,17 +1378,41 @@ export default function RacePage() {
               }}
               className={`typing-container relative w-full text-2xl sm:text-3xl leading-relaxed cursor-text min-h-[180px] flex flex-col items-center justify-center select-none overflow-hidden py-4 px-4 sm:px-8 ${themeConfig.card} border ${themeConfig.border} rounded-2xl`}
             >
+              {/* Countdown overlay before race starts */}
+              {countdownVal > 0 && (
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md rounded-2xl animate-fade-in">
+                  <div className="text-xs uppercase font-extrabold tracking-widest text-amber-400 mb-1">
+                    Get Ready!
+                  </div>
+                  <div
+                    key={countdownVal}
+                    className="text-7xl sm:text-8xl font-black text-amber-400 drop-shadow-[0_0_35px_rgba(245,158,11,0.8)] race-countdown-number"
+                  >
+                    {countdownVal}
+                  </div>
+                  <div
+                    className={`text-xs ${themeConfig.mutedText} mt-2 font-semibold`}
+                  >
+                    Race starting in {countdownVal}s
+                  </div>
+                </div>
+              )}
+
               {/* Caret — same as typing.jsx */}
-              <div
-                ref={caretRef}
-                className={`grow-caret grow-caret-blink ${themeConfig.accent}`}
-                style={{ backgroundColor: "currentColor" }}
-              />
+              {countdownVal <= 0 && (
+                <div
+                  ref={caretRef}
+                  className={`grow-caret grow-caret-blink ${themeConfig.accent}`}
+                  style={{ backgroundColor: "currentColor" }}
+                />
+              )}
               {renderedLines}
             </div>
 
             <p className={`text-center text-xs ${themeConfig.mutedText} mt-3`}>
-              Click the typing area and start typing • Press Esc to cancel
+              {countdownVal > 0
+                ? "Get ready to type when the countdown ends!"
+                : "Click the typing area and start typing • Press Esc to cancel"}
             </p>
           </div>
         )}
@@ -1554,6 +1607,14 @@ export default function RacePage() {
         @keyframes racePulse {
           0%, 100% { box-shadow: 0 0 30px rgba(139,92,246,0.4); transform: scale(1); }
           50%       { box-shadow: 0 0 50px rgba(245,158,11,0.5); transform: scale(1.04); }
+        }
+        @keyframes raceCountdownPop {
+          0% { transform: scale(1.6); opacity: 0.2; }
+          50% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(0.96); opacity: 0.9; }
+        }
+        .race-countdown-number {
+          animation: raceCountdownPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
       `}</style>
     </div>

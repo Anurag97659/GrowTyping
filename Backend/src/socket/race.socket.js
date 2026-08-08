@@ -1,5 +1,5 @@
 
-const rooms = new Map(); // code -> room object
+const rooms = new Map(); 
 const userSocketMap = new Map(); 
 
 function generateCode() {
@@ -156,8 +156,9 @@ export function setupRaceSocket(io) {
       if (!room || room.host !== hostUsername) return;
       if (room.participants.length < 1) return;
 
+      const COUNTDOWN_MS = 5000;
       room.status = 'racing';
-      room.startedAt = Date.now();
+      room.startedAt = Date.now() + COUNTDOWN_MS;
       room.raceText = text;
       room.finishedParticipants = [];
 
@@ -166,6 +167,7 @@ export function setupRaceSocket(io) {
         text,
         duration: room.settings.duration,
         startedAt: room.startedAt,
+        countdownDuration: 5,
       });
     });
 
