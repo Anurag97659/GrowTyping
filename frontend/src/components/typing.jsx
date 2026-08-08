@@ -17,6 +17,7 @@ import {
   FiStar,
   FiSun,
   FiMoon,
+  FiZap,
 } from "react-icons/fi";
 import { useTheme } from "../context/ThemeContext";
 
@@ -203,6 +204,7 @@ export default function TypingPage() {
         if (meRes.data?.loggedIn) {
           setUsername(meRes.data.user.username.toUpperCase());
           setLoggedIn(true);
+          window.localStorage.setItem("growtyping.username", meRes.data.user.username);
         }
       } catch (err) {}
     };
@@ -699,6 +701,12 @@ export default function TypingPage() {
                     >
                       <FiAward className="text-sm" /> Leaderboard
                     </button>
+                    <button
+                      onClick={() => navigate("/race")}
+                      className={`w-full text-left px-3 py-2 text-xs font-medium ${themeConfig.bodyText} hover:bg-black/10 rounded-lg transition-colors flex items-center gap-2`}
+                    >
+                      <FiZap className="text-sm" /> Race
+                    </button>
                     <div className={`my-1 border-t ${themeConfig.border}`}></div>
                     <button
                       onClick={handleLogout}
@@ -726,6 +734,12 @@ export default function TypingPage() {
                       className={`w-full text-left px-3 py-2 text-xs font-medium ${themeConfig.bodyText} hover:bg-black/10 rounded-lg transition-colors flex items-center gap-2`}
                     >
                       <FiAward className="text-sm" /> Leaderboard
+                    </button>
+                    <button
+                      onClick={() => navigate("/race")}
+                      className={`w-full text-left px-3 py-2 text-xs font-medium ${themeConfig.bodyText} hover:bg-black/10 rounded-lg transition-colors flex items-center gap-2`}
+                    >
+                      <FiZap className="text-sm" /> Race
                     </button>
                   </>
                 )}

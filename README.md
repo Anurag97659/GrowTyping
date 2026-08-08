@@ -1,6 +1,6 @@
 # GrowTyping
 
-GrowTyping is a full-stack typing practice platform designed to improve typing speed, accuracy, and key-level consistency. What sets GrowTyping apart is its **per-key performance analysis**: it tracks every keystroke error, generates an interactive visual keyboard heatmap, and pinpoints your **Top 5 Weak Keys** so you can focus practice where it matters most. It also features customizable timed exercises, performance analytics, replayable tests, friend stats, global leaderboards, high-performance Redis caching, and custom theme engines.
+GrowTyping is a full-stack typing practice platform designed to improve typing speed, accuracy, and key-level consistency. What sets GrowTyping apart is its **per-key performance analysis**: it tracks every keystroke error, generates an interactive visual keyboard heatmap, and pinpoints your **Top 5 Weak Keys** so you can focus practice where it matters most. It also features **Real-Time Multiplayer Races**, customizable timed exercises, performance analytics, replayable tests, friend stats, global leaderboards, high-performance Redis caching, and custom theme engines.
 
 ### Live Demo
 [GrowTyping Demo](https://growtyping-1.onrender.com/)  
@@ -10,12 +10,13 @@ GrowTyping is a full-stack typing practice platform designed to improve typing s
 
 ## Features
 
-- **Typing Engine**: Timed tests (15s, 30s, 60s, custom), text modes (Normal, Punctuation, Numbers, Symbols), live WPM/accuracy tracking, and test replay.
+- **Real-Time Multiplayer Race Mode**: Create or join typing race rooms with 6-character room codes. Host controls race duration, text mode (Words, Punctuation, Numbers, Symbols, All), and participant management via a resizable settings sidebar. Send instant in-app race invitations to online friends with global toast notifications, race with live WPM and progress bars, and view real-time final leaderboards.
+- **Typing Engine**: Timed tests (15s, 30s, 60s, custom), text modes (Normal, Punctuation, Numbers, Symbols), live WPM/accuracy tracking, smooth caret positioning, and test replay.
 - **Key Analysis & Heatmap (Unique Feature)**: Deep key-level mistake tracking that pinpoints your **Top 5 Weak Keys** and visualizes keystroke accuracy with an interactive **Keyboard Heatmap**.
 -  **Authentication & Security**: JWT-based auth (Access & Refresh tokens), email verification, password reset, and **Google OAuth 2.0** single sign-on.
 - **Social & Leaderboards**: Global leaderboards, public user profiles, user follow system, and friend stats comparison.
 -  **Analytics & Insights**: Interactive charts for WPM/accuracy trends, daily activity, streaks, best records, and paginated test history.
--  **Performance & Themes**: High-performance Redis caching with automatic database fallback, plus instant persistent theme switching.
+- **Performance & Themes**: High-performance Redis caching with automatic database fallback, plus instant persistent theme switching.
 
 ---
 
@@ -23,8 +24,9 @@ GrowTyping is a full-stack typing practice platform designed to improve typing s
 
 | Layer | Technology |
 | --- | --- |
-| **Frontend** | React, Vite, Tailwind CSS, Axios, Chart.js |
+| **Frontend** | React, Vite, Tailwind CSS, Axios, Chart.js, Socket.io-client |
 | **Backend** | Node.js, Express.js |
+| **Real-time Engine** | Socket.IO (WebSockets with fallback polling) |
 | **Database** | MongoDB with Mongoose ORM |
 | **Caching** | Redis (`ioredis`) with graceful MongoDB fallback |
 | **Authentication** | JWT (JSON Web Tokens), Google OAuth 2.0 |
