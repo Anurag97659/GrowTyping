@@ -95,6 +95,12 @@ const CustomBarTooltip = ({ active, payload, label }) => {
           <span> Avg Accuracy:</span>
           <span className="font-bold">{data.avgAccuracy}%</span>
         </p>
+        {data.totalTests !== undefined && (
+          <p className="flex items-center justify-between gap-3 text-amber-400 font-medium">
+            <span> Total Tests:</span>
+            <span className="font-bold">{data.totalTests}</span>
+          </p>
+        )}
       </div>
     );
   }
@@ -312,28 +318,45 @@ export default function Dashboard() {
     };
   });
 
-  // Bar charts: avg WPM and accuracy by testType computed from historyList
-  const wpmByTypeMap  = {};
-  const accByTypeMap  = {};
-  const cntByTypeMap  = {};
+  
+  const modeStatsFromApi = dashboardStats?.modeStats || {};
+
+  const STANDARD_TYPES = ["15s", "30s", "60s", "custom"];
+  const allKnownTypes = new Set(STANDARD_TYPES);
+
+  Object.keys(modeStatsFromApi).forEach((t) => allKnownTypes.add(t));
+  Object.keys(bestRecords).forEach((t) => allKnownTypes.add(t));
+  historyList.forEach((item) => {
+    if (item.testType) allKnownTypes.add(item.testType);
+  });
+
+  const wpmByTypeMap = {};
+  const accByTypeMap = {};
+  const cntByTypeMap = {};
   historyList.forEach((item) => {
     const t = item.testType || "other";
-    wpmByTypeMap[t]  = (wpmByTypeMap[t]  || 0) + (item.wpm      || 0);
-    accByTypeMap[t]  = (accByTypeMap[t]  || 0) + (item.accuracy || 0);
-    cntByTypeMap[t]  = (cntByTypeMap[t]  || 0) + 1;
+    wpmByTypeMap[t] = (wpmByTypeMap[t] || 0) + (item.wpm || 0);
+    accByTypeMap[t] = (accByTypeMap[t] || 0) + (item.accuracy || 0);
+    cntByTypeMap[t] = (cntByTypeMap[t] || 0) + 1;
   });
-  const TYPE_ORDER = ["15s", "30s", "60s", "custom"];
-  const combinedTypeStats = TYPE_ORDER
-    .map((t) => {
-      const cnt = cntByTypeMap[t] || 0;
-      if (cnt === 0) return null;
+
+  const combinedTypeStats = Array.from(allKnownTypes).map((t) => {
+    if (modeStatsFromApi[t]) {
       return {
         type: t,
-        avgWpm: Math.round((wpmByTypeMap[t] / cnt) * 10) / 10,
-        avgAccuracy: Math.round((accByTypeMap[t] / cnt) * 10) / 10,
+        avgWpm: modeStatsFromApi[t].avgWpm,
+        avgAccuracy: modeStatsFromApi[t].avgAccuracy,
+        totalTests: modeStatsFromApi[t].totalTests,
       };
-    })
-    .filter(Boolean);
+    }
+    const cnt = cntByTypeMap[t] || 0;
+    return {
+      type: t,
+      avgWpm: cnt > 0 ? Math.round((wpmByTypeMap[t] / cnt) * 10) / 10 : 0,
+      avgAccuracy: cnt > 0 ? Math.round((accByTypeMap[t] / cnt) * 10) / 10 : 0,
+      totalTests: cnt,
+    };
+  });
 
   // Top 5 weak keys from keyStatsMap sorted by mistake count
   const topWeakKeys = Object.entries(keyStatsMap)

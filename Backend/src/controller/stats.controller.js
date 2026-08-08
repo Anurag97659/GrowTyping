@@ -7,18 +7,16 @@ import { getCache, setCache, deleteCachePattern } from "../utils/redis.js";
 
 
 const getDateMatch =(range) =>{
-    const now = new Date();
     let start, end;
 
     switch (range) {
       case "today": {
-        const start = new Date();
+        start = new Date();
         start.setHours(0, 0, 0, 0);
 
-        const end = new Date();
+        end = new Date();
         end.setHours(23, 59, 59, 999);
-
-        return { testDate: { $gte: start, $lte: end } };
+        break;
       }
 
       case "lastDay":
@@ -61,8 +59,24 @@ const getDateMatch =(range) =>{
         return {};
     }
 
-    if(start && end) return{ testDate:{ $gte: start, $lte: end } };
-    if(!start && end) return{ testDate:{ $lt: end } };
+    if(start && end) {
+      return {
+        $or: [
+          { testDate: { $gte: start, $lte: end } },
+          { testDate: { $exists: false }, createdAt: { $gte: start, $lte: end } },
+          { testDate: null, createdAt: { $gte: start, $lte: end } }
+        ]
+      };
+    }
+    if(!start && end) {
+      return {
+        $or: [
+          { testDate: { $lt: end } },
+          { testDate: { $exists: false }, createdAt: { $lt: end } },
+          { testDate: null, createdAt: { $lt: end } }
+        ]
+      };
+    }
 
     return{};
 };
@@ -159,26 +173,61 @@ const getDashboardStats = asyncHandler(async(req, res) =>{
     const userId = new mongoose.Types.ObjectId(req.user?._id);
     const dateMatch = getDateMatch(req.query.range);
 
-    const stats = await TypingStat.aggregate([
-      { $match:{ user: userId, ...dateMatch } },
-      {
-            $group:{
-                _id: null,
-                totalSessions:{ $sum: 1 },
-                totalTime:{ $sum: "$duration" },
-                avgWpm:{ $avg: "$wpm" },
-                avgAccuracy:{ $avg: "$accuracy" },
-                highestWpm:{ $max: "$wpm" }
-            }
-        }
+    const [stats, rawModeStats] = await Promise.all([
+      TypingStat.aggregate([
+        { $match:{ user: userId, ...dateMatch } },
+        {
+              $group:{
+                  _id: null,
+                  totalSessions:{ $sum: 1 },
+                  totalTime:{ $sum: "$duration" },
+                  avgWpm:{ $avg: "$wpm" },
+                  avgAccuracy:{ $avg: "$accuracy" },
+                  highestWpm:{ $max: "$wpm" }
+              }
+          }
+      ]),
+      TypingStat.aggregate([
+        { $match: { user: userId, ...dateMatch } },
+        {
+              $group: {
+                  _id: "$testType",
+                  avgWpm: { $avg: "$wpm" },
+                  avgAccuracy: { $avg: "$accuracy" },
+                  totalTests: { $sum: 1 },
+                  highestWpm: { $max: "$wpm" },
+                  highestAccuracy: { $max: "$accuracy" },
+                  longestDuration: { $max: "$duration" }
+              }
+          }
+      ])
     ]);
 
-    const result = stats[0] || {
+    const overview = stats[0] || {
         totalSessions: 0,
         totalTime: 0,
         avgWpm: 0,
         avgAccuracy: 0,
         highestWpm: 0
+    };
+
+    const modeStatsMap = {};
+    rawModeStats.forEach((m) => {
+        if (m._id) {
+            modeStatsMap[m._id] = {
+                avgWpm: Math.round((m.avgWpm || 0) * 10) / 10,
+                avgAccuracy: Math.round((m.avgAccuracy || 0) * 10) / 10,
+                totalTests: m.totalTests || 0,
+                highestWpm: Math.round(m.highestWpm || 0),
+                highestAccuracy: Math.round(m.highestAccuracy || 0),
+                longestDuration: m.longestDuration || 0
+            };
+        }
+    });
+
+    const result = {
+        ...overview,
+        modeStats: modeStatsMap
     };
 
     await setCache(cacheKey, result, 300); // 5 min TTL
@@ -778,10 +827,19 @@ const getHistoryHeatmap = asyncHandler(async (req, res) => {
     }
 
     const data = await TypingStat.aggregate([
-        { $match: { user: userId, testDate: { $gte: start, $lte: end } } },
+        {
+            $match: {
+                user: userId,
+                $or: [
+                    { testDate: { $gte: start, $lte: end } },
+                    { testDate: { $exists: false }, createdAt: { $gte: start, $lte: end } },
+                    { testDate: null, createdAt: { $gte: start, $lte: end } }
+                ]
+            }
+        },
         {
             $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$testDate" } },
+                _id: { $dateToString: { format: "%Y-%m-%d", date: { $ifNull: ["$testDate", "$createdAt"] } } },
                 count: { $sum: 1 },
                 avgWpm: { $avg: "$wpm" },
                 avgAccuracy: { $avg: "$accuracy" }
