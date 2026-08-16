@@ -30,6 +30,7 @@ import {
   FiLayers,
   FiLogIn,
   FiAward,
+  FiX,
 } from "react-icons/fi";
 
 const KEYBOARD_ROWS = [
@@ -125,6 +126,146 @@ const CustomWeakKeyTooltip = ({ active, payload }) => {
   return null;
 };
 
+const getTestKeyStats = (test) =>
+  Object.fromEntries(
+    (Array.isArray(test?.keyStats) ? test.keyStats : [])
+      .filter((stat) => stat?.key)
+      .map((stat) => [
+        String(stat.key).toLowerCase(),
+        {
+          attempts: Number(stat.attempts) || 0,
+          mistakes: Number(stat.mistakeCount) || 0,
+        },
+      ])
+  );
+
+function TestDetailsModal({ test, themeConfig, onClose }) {
+  if (!test) return null;
+
+  const keyStats = getTestKeyStats(test);
+  const wrongKeys = Object.entries(keyStats)
+    .map(([key, stat]) => ({ key, ...stat }))
+    .filter((stat) => stat.mistakes > 0)
+    .sort((a, b) => b.mistakes - a.mistakes || b.attempts - a.attempts);
+  const heatClass = ({ attempts, mistakes }) => {
+    if (!attempts) return "bg-slate-500/15 border-slate-500/30 text-slate-400";
+    const errorRate = mistakes / attempts;
+    if (errorRate >= 0.4) return "bg-rose-500/80 border-rose-300 text-white";
+    if (errorRate >= 0.2) return "bg-orange-500/75 border-orange-300 text-white";
+    if (errorRate > 0) return "bg-amber-400/75 border-amber-200 text-slate-950";
+    return "bg-emerald-500/70 border-emerald-200 text-white";
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="test-details-title"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section className={`w-full max-w-4xl max-h-[90vh] overflow-y-auto ${themeConfig.card} border ${themeConfig.border} shadow-2xl`}>
+        <header className={`sticky top-0 z-10 flex items-start justify-between gap-4 border-b ${themeConfig.border} ${themeConfig.card} p-5`}>
+          <div>
+            <p className={`text-[11px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>Test details</p>
+            <h2 id="test-details-title" className={`mt-1 text-xl font-black ${themeConfig.bodyText}`}>
+              {test.testType} typing test
+            </h2>
+            <p className={`mt-1 text-xs ${themeConfig.mutedText}`}>
+              {test.testDate || test.createdAt ? new Date(test.testDate || test.createdAt).toLocaleString() : "Recent test"}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className={`p-2 ${themeConfig.buttonSecondary}`} aria-label="Close test details">
+            <FiX className="text-lg" />
+          </button>
+        </header>
+
+        <div className="space-y-6 p-5 sm:p-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              ["Speed", `${test.wpm || 0} WPM`, "text-cyan-400"],
+              ["Accuracy", `${Number(test.accuracy || 0).toFixed(1)}%`, "text-emerald-400"],
+              ["Duration", `${test.duration || 0}s`, "text-amber-400"],
+              ["Typed", test.charactersTyped || 0, themeConfig.bodyText],
+              ["Correct", test.correctChars || 0, "text-emerald-400"],
+              ["Wrong", test.incorrectChars || 0, "text-rose-400"],
+            ].map(([label, value, color]) => (
+              <div key={label} className={`${themeConfig.cardInset} border ${themeConfig.border} p-3`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${themeConfig.mutedText}`}>{label}</p>
+                <p className={`mt-1 text-lg font-black ${color}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className={`${themeConfig.cardInset} border ${themeConfig.border} p-4`}>
+            <h3 className={`text-sm font-extrabold ${themeConfig.bodyText}`}>Statement typed</h3>
+            {test.testText ? (
+              <p className={`mt-3 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg border ${themeConfig.border} bg-black/10 p-3 text-xs leading-6 ${themeConfig.bodyText}`}>
+                {test.testText}
+              </p>
+            ) : (
+              <p className={`mt-3 text-xs ${themeConfig.mutedText}`}>The statement for this older test was not saved.</p>
+            )}
+          </div>
+
+          <div>
+            <div className={`${themeConfig.cardInset} border ${themeConfig.border} p-4`}>
+              <h3 className={`text-sm font-extrabold ${themeConfig.bodyText}`}>Wrong keys typed</h3>
+              <p className={`mt-1 text-xs ${themeConfig.mutedText}`}>Wrong presses compared with total attempts for each key.</p>
+              {wrongKeys.length ? (
+                <div className="mt-4 max-h-40 space-y-1 overflow-y-auto pr-1">
+                  {wrongKeys.map(({ key, mistakes, attempts }) => (
+                    <div key={key} className="flex items-center justify-between rounded-lg bg-rose-500/10 px-3 py-2 text-xs">
+                      <span className="font-black text-rose-400">{key.toUpperCase()}</span>
+                      <span className={themeConfig.mutedText}>{mistakes} wrong / {attempts} total</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`mt-4 text-xs ${themeConfig.mutedText}`}>No wrong-key data was recorded for this test.</p>
+              )}
+            </div>
+          </div>
+
+          <div className={`${themeConfig.cardInset} border ${themeConfig.border} p-4`}>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h3 className={`text-sm font-extrabold ${themeConfig.bodyText}`}>Per-test keyboard heatmap</h3>
+                <p className={`mt-1 text-xs ${themeConfig.mutedText}`}>Green = no errors; yellow, orange, and red = higher error rate.</p>
+              </div>
+              <span className={`text-[10px] ${themeConfig.mutedText}`}>Hover a key for attempts and errors</span>
+            </div>
+            <div className="mt-5 space-y-2 overflow-x-auto pb-1">
+              {KEYBOARD_ROWS.map((row, rowIndex) => (
+                <div key={rowIndex} className="flex min-w-max justify-center gap-2">
+                  {row.map((key) => {
+                    const stat = keyStats[key] || { attempts: 0, mistakes: 0 };
+                    return (
+                      <div key={key} className={`group relative flex h-14 w-14 flex-col items-center justify-center rounded-lg border shadow-sm ${heatClass(stat)}`}>
+                        <span className="text-sm font-black uppercase">{key}</span>
+                        <span className="text-[9px] font-medium">{stat.attempts ? `${stat.mistakes}/${stat.attempts}` : "—"}</span>
+                        <div className={`pointer-events-none absolute left-1/2 z-20 w-32 -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-950 p-2 text-center text-[10px] text-slate-100 opacity-0 shadow-xl transition-opacity group-hover:opacity-100 ${
+                          rowIndex === KEYBOARD_ROWS.length - 1 ? "bottom-full mb-2" : "top-full mt-2"
+                        }`}>
+                          <p className="font-black">{key.toUpperCase()}</p>
+                          <p>Attempts: {stat.attempts}</p>
+                          <p>Errors: {stat.mistakes}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { themeConfig, mode, toggleMode, themeId, setThemeId, THEMES } = useTheme();
@@ -159,6 +300,7 @@ export default function Dashboard() {
     hasMore: false,
   });
   const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
+  const [selectedHistoryTest, setSelectedHistoryTest] = useState(null);
 
   // Fetch telemetry based on selected time range
   const fetchDashboardData = async (range = selectedRange) => {
@@ -935,7 +1077,12 @@ export default function Dashboard() {
                     </thead>
                     <tbody className={`divide-y ${themeConfig.border}`}>
                       {historyList.map((item, idx) => (
-                        <tr key={item._id || idx} className="hover:bg-black/5 transition-colors">
+                        <tr
+                          key={item._id || idx}
+                          onClick={() => setSelectedHistoryTest(item)}
+                          className="cursor-pointer hover:bg-black/5 transition-colors"
+                          title="View test details"
+                        >
                           <td className="py-3.5 px-4 font-mono">
                             {item.testDate || item.createdAt
                               ? new Date(item.testDate || item.createdAt).toLocaleDateString()
@@ -951,7 +1098,10 @@ export default function Dashboard() {
                           <td className="py-3.5 px-4">
                             <button
                               type="button"
-                              onClick={() => handleReplayTest(item)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleReplayTest(item);
+                              }}
                               className={`px-3 py-1.5 ${themeConfig.buttonPrimary} text-[11px] font-bold flex items-center gap-1.5`}
                               title="Retake this test duration with identical or new text"
                             >
@@ -984,6 +1134,11 @@ export default function Dashboard() {
           </>
         )}
       </div>
+      <TestDetailsModal
+        test={selectedHistoryTest}
+        themeConfig={themeConfig}
+        onClose={() => setSelectedHistoryTest(null)}
+      />
     </div>
   );
 }
