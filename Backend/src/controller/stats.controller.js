@@ -738,7 +738,7 @@ const getUserTypingStreak = asyncHandler(async (req, res) => {
 
 const getLeaderboard = asyncHandler(async (req, res) => {
     const { range = "all", testType = "all" } = req.query;
-    const cacheKey = `stats:leaderboard:${range}:${testType}`;
+    const cacheKey = `stats:leaderboard:v2:${range}:${testType}`;
     const cachedLeaderboard = await getCache(cacheKey);
     if (cachedLeaderboard) {
         return res.status(200).json(
@@ -755,16 +755,18 @@ const getLeaderboard = asyncHandler(async (req, res) => {
 
     const leaderboard = await TypingStat.aggregate([
         { $match: matchQuery },
+        { $sort: { wpm: -1, accuracy: -1, testDate: -1, _id: -1 } },
         {
             $group: {
                 _id: "$user",
-                highestWpm: { $max: "$wpm" },
+                highestWpm: { $first: "$wpm" },
+                accuracy: { $first: "$accuracy" },
                 avgWpm: { $avg: "$wpm" },
                 avgAccuracy: { $avg: "$accuracy" },
                 totalTests: { $sum: 1 }
             }
         },
-        { $sort: { highestWpm: -1, avgAccuracy: -1 } },
+        { $sort: { highestWpm: -1, accuracy: -1 } },
         { $limit: 100 },
         {
             $lookup: {
@@ -781,6 +783,7 @@ const getLeaderboard = asyncHandler(async (req, res) => {
                 username: "$userDoc.username",
                 fullname: "$userDoc.fullname",
                 highestWpm: 1,
+                accuracy: 1,
                 avgWpm: 1,
                 avgAccuracy: 1,
                 totalTests: 1

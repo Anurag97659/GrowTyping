@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useTheme } from "../context/ThemeContext";
@@ -12,6 +12,7 @@ import {
   FiUser,
   FiZap,
   FiSearch,
+  FiRefreshCw,
 } from "react-icons/fi";
 
 const RANGES = [
@@ -40,7 +41,7 @@ export default function Leaderboard() {
   const [testType, setTestType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
@@ -54,11 +55,27 @@ export default function Leaderboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [range, testType]);
 
   useEffect(() => {
     fetchLeaderboard();
   }, [range, testType]);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") fetchLeaderboard();
+    };
+
+    window.addEventListener("growtyping:stat-saved", fetchLeaderboard);
+    window.addEventListener("focus", fetchLeaderboard);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.removeEventListener("growtyping:stat-saved", fetchLeaderboard);
+      window.removeEventListener("focus", fetchLeaderboard);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [fetchLeaderboard]);
 
   const filteredLeaderboard = leaderboard.filter((item) =>
     (item.username || item.user?.username || "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -85,6 +102,15 @@ export default function Leaderboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={fetchLeaderboard}
+              disabled={loading}
+              className={`p-2.5 ${themeConfig.buttonSecondary} transition-all disabled:cursor-not-allowed disabled:opacity-50`}
+              title="Refresh leaderboard"
+              aria-label="Refresh leaderboard"
+            >
+              <FiRefreshCw className={`text-sm ${loading ? "animate-spin" : ""}`} />
+            </button>
             <select
               value={themeId}
               onChange={(e) => setThemeId(e.target.value)}
@@ -183,7 +209,7 @@ export default function Leaderboard() {
                       {topThree[1].wpm || topThree[1].highestWpm || 0} <span className="text-xs font-normal">WPM</span>
                     </p>
                     <span className={`text-xs ${themeConfig.mutedText}`}>
-                      Accuracy: {topThree[1].accuracy || topThree[1].avgAccuracy || 100}%
+                      Accuracy: {topThree[1].accuracy ?? topThree[1].avgAccuracy ?? 100}%
                     </span>
                   </div>
                 )}
@@ -202,7 +228,7 @@ export default function Leaderboard() {
                       {topThree[0].wpm || topThree[0].highestWpm || 0} <span className="text-xs font-normal">WPM</span>
                     </p>
                     <span className={`text-xs ${themeConfig.mutedText}`}>
-                      Accuracy: {topThree[0].accuracy || topThree[0].avgAccuracy || 100}%
+                      Accuracy: {topThree[0].accuracy ?? topThree[0].avgAccuracy ?? 100}%
                     </span>
                   </div>
                 )}
@@ -220,7 +246,7 @@ export default function Leaderboard() {
                       {topThree[2].wpm || topThree[2].highestWpm || 0} <span className="text-xs font-normal">WPM</span>
                     </p>
                     <span className={`text-xs ${themeConfig.mutedText}`}>
-                      Accuracy: {topThree[2].accuracy || topThree[2].avgAccuracy || 100}%
+                      Accuracy: {topThree[2].accuracy ?? topThree[2].avgAccuracy ?? 100}%
                     </span>
                   </div>
                 )}
@@ -273,7 +299,7 @@ export default function Leaderboard() {
                             {item.wpm || item.highestWpm || 0} WPM
                           </td>
                           <td className="py-3.5 px-4 font-bold text-emerald-400">
-                            {item.accuracy || item.avgAccuracy || 100}%
+                            {item.accuracy ?? item.avgAccuracy ?? 100}%
                           </td>
                           <td className={`py-3.5 px-4 ${themeConfig.mutedText}`}>
                             {item.totalTests || item.testsCompleted || 1} tests

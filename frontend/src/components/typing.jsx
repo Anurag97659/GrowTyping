@@ -40,7 +40,7 @@ const WORDS = [
   "follow", "during", "present", "without", "again", "hold", "govern", "around", "possible",
   "head", "consider", "word", "program", "problem", "however", "lead", "system", "set", "order",
   "eye", "plan", "run", "keep", "face", "fact", "group", "play", "stand", "increase", "early",
-  "course", "change", "help", "line"
+  "course", "change", "help", "line","question","fix","zoo","jumps","quick","fox"
 ];
 
 const PUNCTUATION_MARKS = [",", ".", "!", "?", ":", ";"];
@@ -350,9 +350,14 @@ export default function TypingPage() {
 
     try {
       await api.post("/GrowTyping/v1/stats/save", payload);
+      // Notify an already-open leaderboard as soon as the server has persisted
+      // the result. This avoids showing rankings fetched before this test ended.
+      window.dispatchEvent(new Event("growtyping:stat-saved"));
     } catch (err) {
       if (err.response?.status === 401) {
         console.info("Guest mode: stats not saved");
+      } else {
+        console.error("Unable to save typing stat:", err);
       }
     }
   };
