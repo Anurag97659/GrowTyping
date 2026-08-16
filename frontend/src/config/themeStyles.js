@@ -9,7 +9,14 @@ export const THEMES = [
   { id: "maximalism", name: "Maximalism", description: "Vibrant multi-color mesh gradients, glowing text, and high energy elements" },
   { id: "terminal", name: "Terminal CRT", description: "Retro green monospaced matrix aesthetic with CRT scanlines" },
   { id: "cyberpunk", name: "Cyberpunk Neon", description: "Futuristic neon pink and cyan glow over dark technical grid" },
-  { id: "luxury-gold", name: "Luxury Gold", description: "Deep royal slate base with warm champagne gold gradient accents" }
+  { id: "luxury-gold", name: "Luxury Gold", description: "Deep royal slate base with warm champagne gold gradient accents" },
+  { id: "gruvbox", name: "Gruvbox", description: "Warm retro-groove palette with comfortable amber and green accents" },
+  { id: "bauhaus", name: "Bauhaus", description: "Geometric primary-color blocks, bold sans-serif type, and functional grid structure" },
+  { id: "vaporwave", name: "Vaporwave", description: "Retro 80s synthwave neon gradients, grid horizons, and magenta-cyan glow" },
+  { id: "nordic", name: "Nordic", description: "Cool Scandinavian blue-gray palette with calm, muted, understated tones" },
+  { id: "art-deco", name: "Art Deco", description: "Opulent black and gold geometric patterning with sharp symmetrical elegance" },
+  { id: "dracula", name: "Dracula", description: "Popular developer dark theme with purple, pink, and cyan syntax-style accents" },
+
 ];
 
 export const getThemeConfig = (themeId = "glassmorphism", mode = "dark") => {
@@ -260,6 +267,154 @@ export const getThemeConfig = (themeId = "glassmorphism", mode = "dark") => {
           : "bg-white text-stone-900 border border-amber-300 rounded-xl p-3 focus:border-amber-500 focus:outline-none",
         accent: isDark ? "text-amber-400" : "text-amber-600",
         border: isDark ? "border-amber-500/30" : "border-amber-300",
+      };
+
+    case "gruvbox":
+      return {
+        id: "gruvbox",
+        mode,
+        bg: isDark ? "bg-[#282828]" : "bg-[#fbf1c7]",
+        bodyText: isDark ? "text-[#ebdbb2]" : "text-[#3c3836]",
+        mutedText: isDark ? "text-[#bdae93]" : "text-[#7c6f64]",
+        card: isDark ? "bg-[#3c3836] border border-[#665c54] rounded-2xl shadow-[0_12px_28px_rgba(40,40,40,0.4)]" : "bg-[#f9f5d7] border border-[#d5c4a1] rounded-2xl shadow-[0_10px_24px_rgba(124,111,100,0.16)]",
+        cardInset: isDark ? "bg-[#32302f] border border-[#504945] rounded-xl" : "bg-[#f2e5bc] border border-[#d5c4a1] rounded-xl",
+        buttonPrimary: isDark ? "bg-[#fabd2f] text-[#282828] hover:bg-[#fecc4e] font-bold rounded-xl shadow-lg shadow-[#fabd2f]/20 transition-all" : "bg-[#b57614] text-white hover:bg-[#9d650f] font-bold rounded-xl shadow-lg shadow-[#b57614]/20 transition-all",
+        buttonSecondary: isDark ? "bg-[#504945] text-[#ebdbb2] hover:bg-[#665c54] border border-[#665c54] rounded-xl transition-all" : "bg-[#ebdbb2] text-[#3c3836] hover:bg-[#d5c4a1] border border-[#c8b78f] rounded-xl transition-all",
+        input: isDark ? "bg-[#32302f] text-[#ebdbb2] border border-[#665c54] rounded-xl p-3 focus:border-[#fabd2f] focus:outline-none" : "bg-[#fff9dc] text-[#3c3836] border border-[#c8b78f] rounded-xl p-3 focus:border-[#b57614] focus:outline-none",
+        accent: isDark ? "text-[#fabd2f]" : "text-[#b57614]",
+        border: isDark ? "border-[#665c54]" : "border-[#d5c4a1]",
+      };
+    
+    case "bauhaus":
+      return {
+        id: "bauhaus",
+        mode,
+        bg: isDark ? "bg-[#1c1c1a]" : "bg-[#f5f2e8]",
+        bodyText: isDark ? "text-[#f5f2e8] font-sans" : "text-[#1c1c1a] font-sans",
+        mutedText: isDark ? "text-[#d9d4c3]/60" : "text-[#1c1c1a]/60",
+        card: isDark
+          ? "bg-[#242420] border-4 border-[#e8b23d] rounded-none shadow-[8px_8px_0px_#c0392b]"
+          : "bg-white border-4 border-[#1c1c1a] rounded-none shadow-[8px_8px_0px_#2456a8]",
+        cardInset: isDark
+          ? "bg-[#1c1c1a] border-2 border-[#e8b23d]/60 rounded-none"
+          : "bg-[#eeeadb] border-2 border-[#1c1c1a]/60 rounded-none",
+        buttonPrimary: isDark
+          ? "bg-[#c0392b] text-[#f5f2e8] font-black uppercase tracking-wide rounded-none border-2 border-[#f5f2e8] hover:bg-[#e8b23d] hover:text-[#1c1c1a] transition-all"
+          : "bg-[#2456a8] text-white font-black uppercase tracking-wide rounded-none border-2 border-[#1c1c1a] hover:bg-[#c0392b] transition-all",
+        buttonSecondary: isDark
+          ? "bg-[#e8b23d] text-[#1c1c1a] font-bold uppercase rounded-none border-2 border-[#1c1c1a] hover:bg-[#f5f2e8] transition-all"
+          : "bg-[#f5c518] text-[#1c1c1a] font-bold uppercase rounded-none border-2 border-[#1c1c1a] hover:bg-[#e8b23d] transition-all",
+        input: isDark
+          ? "bg-[#1c1c1a] text-[#f5f2e8] border-2 border-[#e8b23d] rounded-none p-3 focus:outline-none"
+          : "bg-white text-[#1c1c1a] border-2 border-[#1c1c1a] rounded-none p-3 focus:outline-none",
+        accent: isDark ? "text-[#e8b23d]" : "text-[#2456a8]",
+        border: isDark ? "border-[#e8b23d]" : "border-[#1c1c1a]",
+      };
+
+    case "vaporwave":
+      return {
+        id: "vaporwave",
+        mode,
+        bg: isDark
+          ? "bg-gradient-to-b from-[#1a0b2e] via-[#2d1b4e] to-[#0f0326]"
+          : "bg-gradient-to-b from-[#ffd6f6] via-[#c9b6ff] to-[#a6e3ff]",
+        bodyText: isDark ? "text-[#f7c8ff]" : "text-[#3a1b5c]",
+        mutedText: isDark ? "text-[#9d7ad1]" : "text-[#6b4a94]",
+        card: isDark
+          ? "bg-[#1a0b2e]/70 border border-[#ff71ce]/50 shadow-[0_0_25px_rgba(255,113,206,0.35)] rounded-lg backdrop-blur-sm"
+          : "bg-white/50 border border-[#c026d3]/40 shadow-[0_0_25px_rgba(192,38,211,0.2)] rounded-lg backdrop-blur-sm",
+        cardInset: isDark
+          ? "bg-[#0f0326]/80 border border-[#01cdfe]/30 rounded-md"
+          : "bg-white/40 border border-[#01cdfe]/40 rounded-md",
+        buttonPrimary: isDark
+          ? "bg-gradient-to-r from-[#ff71ce] to-[#01cdfe] text-[#1a0b2e] font-bold uppercase tracking-widest rounded-lg shadow-[0_0_15px_rgba(1,205,254,0.6)] hover:brightness-110 transition-all"
+          : "bg-gradient-to-r from-[#c026d3] to-[#0891b2] text-white font-bold uppercase tracking-widest rounded-lg shadow-[0_0_15px_rgba(192,38,211,0.4)] hover:brightness-110 transition-all",
+        buttonSecondary: isDark
+          ? "bg-[#2d1b4e]/70 text-[#f7c8ff] border border-[#ff71ce]/40 rounded-lg hover:bg-[#2d1b4e] transition-all"
+          : "bg-white/60 text-[#6b21a8] border border-[#c026d3]/40 rounded-lg hover:bg-white/80 transition-all",
+        input: isDark
+          ? "bg-[#0f0326]/70 text-[#f7c8ff] border border-[#ff71ce]/40 rounded-lg p-3 focus:border-[#01cdfe] focus:outline-none"
+          : "bg-white/70 text-[#3a1b5c] border border-[#c026d3]/40 rounded-lg p-3 focus:border-[#0891b2] focus:outline-none",
+        accent: isDark ? "text-[#01cdfe]" : "text-[#c026d3]",
+        border: isDark ? "border-[#ff71ce]/40" : "border-[#c026d3]/30",
+      };
+
+    case "nordic":
+      return {
+        id: "nordic",
+        mode,
+        bg: isDark ? "bg-[#2e3440]" : "bg-[#eceff4]",
+        bodyText: isDark ? "text-[#e5e9f0]" : "text-[#2e3440]",
+        mutedText: isDark ? "text-[#8fa3bf]" : "text-[#4c566a]",
+        card: isDark
+          ? "bg-[#3b4252] border border-[#4c566a] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
+          : "bg-white border border-[#d8dee9] rounded-xl shadow-[0_8px_20px_rgba(76,86,106,0.08)]",
+        cardInset: isDark
+          ? "bg-[#2e3440] border border-[#434c5e] rounded-lg"
+          : "bg-[#e5e9f0] border border-[#d8dee9] rounded-lg",
+        buttonPrimary: isDark
+          ? "bg-[#88c0d0] text-[#2e3440] font-semibold rounded-lg hover:bg-[#8fbcbb] transition-all"
+          : "bg-[#5e81ac] text-white font-semibold rounded-lg hover:bg-[#81a1c1] transition-all",
+        buttonSecondary: isDark
+          ? "bg-[#434c5e] text-[#e5e9f0] border border-[#4c566a] rounded-lg hover:bg-[#4c566a] transition-all"
+          : "bg-[#e5e9f0] text-[#2e3440] border border-[#d8dee9] rounded-lg hover:bg-[#d8dee9] transition-all",
+        input: isDark
+          ? "bg-[#2e3440] text-[#e5e9f0] border border-[#4c566a] rounded-lg p-3 focus:border-[#88c0d0] focus:outline-none"
+          : "bg-white text-[#2e3440] border border-[#d8dee9] rounded-lg p-3 focus:border-[#5e81ac] focus:outline-none",
+        accent: isDark ? "text-[#88c0d0]" : "text-[#5e81ac]",
+        border: isDark ? "border-[#4c566a]" : "border-[#d8dee9]",
+      };
+
+    case "art-deco":
+      return {
+        id: "art-deco",
+        mode,
+        bg: isDark ? "bg-[#0d0d0d]" : "bg-[#f7f3e8]",
+        bodyText: isDark ? "text-[#f0e4c1]" : "text-[#14140f]",
+        mutedText: isDark ? "text-[#c9a86a]/70" : "text-[#7a6a3a]",
+        card: isDark
+          ? "bg-[#161616] border-2 border-[#c9a86a] rounded-none shadow-[0_0_20px_rgba(201,168,106,0.15)]"
+          : "bg-white border-2 border-[#14140f] rounded-none shadow-[0_10px_25px_rgba(20,20,15,0.1)]",
+        cardInset: isDark
+          ? "bg-[#0d0d0d] border border-[#c9a86a]/50 rounded-none"
+          : "bg-[#f0ead6] border border-[#14140f]/40 rounded-none",
+        buttonPrimary: isDark
+          ? "bg-gradient-to-r from-[#c9a86a] to-[#e8cd8f] text-[#0d0d0d] font-bold uppercase tracking-[0.15em] rounded-none border border-[#c9a86a] hover:brightness-110 transition-all"
+          : "bg-[#14140f] text-[#e8cd8f] font-bold uppercase tracking-[0.15em] rounded-none border border-[#14140f] hover:bg-[#2a2a20] transition-all",
+        buttonSecondary: isDark
+          ? "bg-transparent text-[#c9a86a] border border-[#c9a86a] rounded-none hover:bg-[#c9a86a]/10 transition-all"
+          : "bg-transparent text-[#14140f] border border-[#14140f] rounded-none hover:bg-[#14140f]/5 transition-all",
+        input: isDark
+          ? "bg-[#0d0d0d] text-[#f0e4c1] border border-[#c9a86a]/60 rounded-none p-3 focus:border-[#e8cd8f] focus:outline-none"
+          : "bg-white text-[#14140f] border border-[#14140f]/50 rounded-none p-3 focus:border-[#14140f] focus:outline-none",
+        accent: isDark ? "text-[#c9a86a]" : "text-[#8a6d1f]",
+        border: isDark ? "border-[#c9a86a]/50" : "border-[#14140f]/30",
+      };
+
+    case "dracula":
+      return {
+        id: "dracula",
+        mode,
+        bg: isDark ? "bg-[#282a36]" : "bg-[#f8f8f2]",
+        bodyText: isDark ? "text-[#f8f8f2] font-mono" : "text-[#282a36] font-mono",
+        mutedText: isDark ? "text-[#6272a4]" : "text-[#6272a4]",
+        card: isDark
+          ? "bg-[#343746] border border-[#6272a4]/50 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.4)]"
+          : "bg-white border border-[#e2e2f0] rounded-xl shadow-[0_10px_25px_rgba(98,114,164,0.12)]",
+        cardInset: isDark
+          ? "bg-[#282a36] border border-[#44475a] rounded-lg"
+          : "bg-[#f1f1f9] border border-[#e2e2f0] rounded-lg",
+        buttonPrimary: isDark
+          ? "bg-[#bd93f9] text-[#282a36] font-bold rounded-lg shadow-[0_0_12px_rgba(189,147,249,0.4)] hover:bg-[#ff79c6] transition-all"
+          : "bg-[#8b5cf6] text-white font-bold rounded-lg shadow-[0_4px_12px_rgba(139,92,246,0.3)] hover:bg-[#d946ef] transition-all",
+        buttonSecondary: isDark
+          ? "bg-[#44475a] text-[#f8f8f2] border border-[#6272a4]/50 rounded-lg hover:bg-[#4d5066] transition-all"
+          : "bg-[#f1f1f9] text-[#282a36] border border-[#e2e2f0] rounded-lg hover:bg-[#e2e2f0] transition-all",
+        input: isDark
+          ? "bg-[#282a36] text-[#f8f8f2] border border-[#6272a4]/50 rounded-lg p-3 focus:border-[#bd93f9] focus:outline-none"
+          : "bg-white text-[#282a36] border border-[#e2e2f0] rounded-lg p-3 focus:border-[#8b5cf6] focus:outline-none",
+        accent: isDark ? "text-[#ff79c6]" : "text-[#d946ef]",
+        border: isDark ? "border-[#6272a4]/40" : "border-[#e2e2f0]",
       };
 
     case "glassmorphism":
