@@ -9,6 +9,7 @@ const GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 const OAUTH_STATE_COOKIE = "growtyping_google_oauth_state";
+const OAUTH_ORIGIN_COOKIE = "growtyping_google_oauth_origin";
 const isProduction = process.env.NODE_ENV === "production";
 
 const oauthCookieOptions = {
@@ -24,8 +25,61 @@ const sessionCookieOptions = {
   sameSite: isProduction ? "none" : "lax",
 };
 
-function frontendUrl() {
-  return (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
+const ALLOWED_FRONTEND_ORIGINS = [
+  "https://growtyping.me",
+  "https://www.growtyping.me",
+  "https://growtyping-1.onrender.com",
+  "https://growtyping.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+];
+
+function sanitizeOrigin(urlStr) {
+  if (!urlStr) return null;
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.origin.replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+}
+
+function getAllowedFrontendOrigins() {
+  const envOrigins = [
+    ...(process.env.CORS_ORIGIN || "").split(","),
+    ...(process.env.FRONTEND_URL || "").split(","),
+  ]
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const origins = [...ALLOWED_FRONTEND_ORIGINS, ...envOrigins];
+  return origins
+    .map((o) => sanitizeOrigin(o) || o.replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
+function getMatchingFrontendOrigin(input) {
+  const origin = sanitizeOrigin(input);
+  if (!origin) return null;
+  const allowed = getAllowedFrontendOrigins();
+  return allowed.find((allowedOrigin) => allowedOrigin === origin) || null;
+}
+
+function defaultFrontendUrl() {
+  if (process.env.FRONTEND_URL) {
+    const firstConfigured = process.env.FRONTEND_URL.split(",")[0].trim().replace(/\/+$/, "");
+    if (firstConfigured) return firstConfigured;
+  }
+  return isProduction ? "https://growtyping.me" : "http://localhost:5173";
+}
+
+function frontendUrl(preferredUrl) {
+  if (preferredUrl) {
+    const matched = getMatchingFrontendOrigin(preferredUrl);
+    if (matched) return matched;
+  }
+  return defaultFrontendUrl();
 }
 
 function requireGoogleConfig() {
@@ -42,8 +96,9 @@ function requireGoogleConfig() {
   return config;
 }
 
-function redirectToFrontend(res, path, params = {}) {
-  const url = new URL(path, `${frontendUrl()}/`);
+function redirectToFrontend(res, path, params = {}, targetOrigin) {
+  const base = frontendUrl(targetOrigin);
+  const url = new URL(path, `${base}/`);
   Object.entries(params).forEach(([key, value]) => {
     if (value) url.searchParams.set(key, value);
   });
@@ -148,6 +203,14 @@ export const googleRedirect = (req, res, next) => {
   try {
     const { clientId, redirectUri } = requireGoogleConfig();
     const state = crypto.randomBytes(32).toString("hex");
+
+    const reqOrigin =
+      req.query.origin ||
+      req.query.redirect_to ||
+      req.headers.referer ||
+      req.headers.origin;
+    const targetFrontend = getMatchingFrontendOrigin(reqOrigin) || defaultFrontendUrl();
+
     const url = new URL(GOOGLE_AUTHORIZE_URL);
     url.search = new URLSearchParams({
       client_id: clientId,
@@ -158,7 +221,10 @@ export const googleRedirect = (req, res, next) => {
       prompt: "select_account",
     }).toString();
 
-    return res.cookie(OAUTH_STATE_COOKIE, state, oauthCookieOptions).redirect(url.toString());
+    return res
+      .cookie(OAUTH_STATE_COOKIE, state, oauthCookieOptions)
+      .cookie(OAUTH_ORIGIN_COOKIE, targetFrontend, oauthCookieOptions)
+      .redirect(url.toString());
   } catch (error) {
     return next(error);
   }
@@ -166,11 +232,14 @@ export const googleRedirect = (req, res, next) => {
 
 export const googleCallback = async (req, res) => {
   const { code, error, state } = req.query;
+  const targetFrontend = req.cookies?.[OAUTH_ORIGIN_COOKIE] || defaultFrontendUrl();
   const stateIsValid = stateMatches(req.cookies?.[OAUTH_STATE_COOKIE], state);
-  res.clearCookie(OAUTH_STATE_COOKIE, oauthCookieOptions);
 
-  if (error || !code) return redirectToFrontend(res, "/login", { error: "google_cancelled" });
-  if (!stateIsValid) return redirectToFrontend(res, "/login", { error: "google_state_invalid" });
+  res.clearCookie(OAUTH_STATE_COOKIE, oauthCookieOptions);
+  res.clearCookie(OAUTH_ORIGIN_COOKIE, oauthCookieOptions);
+
+  if (error || !code) return redirectToFrontend(res, "/login", { error: "google_cancelled" }, targetFrontend);
+  if (!stateIsValid) return redirectToFrontend(res, "/login", { error: "google_state_invalid" }, targetFrontend);
 
   try {
     const profile = await getGoogleProfile(code);
@@ -180,10 +249,10 @@ export const googleCallback = async (req, res) => {
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "2m" }
     );
-    return redirectToFrontend(res, "/oauth/callback", { token: handoffToken });
+    return redirectToFrontend(res, "/oauth/callback", { token: handoffToken }, targetFrontend);
   } catch (error) {
     console.error("Google OAuth callback failed:", error.message);
-    return redirectToFrontend(res, "/login", { error: "google_failed" });
+    return redirectToFrontend(res, "/login", { error: "google_failed" }, targetFrontend);
   }
 };
 

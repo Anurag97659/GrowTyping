@@ -17,6 +17,8 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
+    'https://growtyping.me',
+    'https://www.growtyping.me',
     'https://growtyping-1.onrender.com',
     'https://growtyping.vercel.app',
     ...(process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
